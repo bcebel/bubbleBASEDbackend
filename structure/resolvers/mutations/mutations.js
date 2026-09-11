@@ -832,18 +832,30 @@ const resolvers = {
 
   Mutation: {
     updateBubblePhoto: async (_, { neighborhoodId, cid }, context) => {
+      console.log("🔥 updateBubblePhoto called");
+      console.log("   neighborhoodId:", neighborhoodId);
+      console.log("   cid:", cid);
+      console.log("   context.user:", context.user);
+
       if (!context.user) throw new Error("Authentication required");
 
       const neighborhood = await Neighborhood.findById(neighborhoodId);
+      console.log("   neighborhood found:", !!neighborhood);
+
       if (!neighborhood) throw new Error("Neighborhood not found");
 
-      // ✅ Use context.user.userId, not user.userId
+      console.log("   neighborhood.owner:", neighborhood.owner.toString());
+      console.log("   context.user.userId:", context.user.userId);
+
       if (neighborhood.owner.toString() !== context.user.userId.toString()) {
         throw new Error("Only the owner can set the bubble photo");
       }
 
       neighborhood.bubblePhotoCid = cid;
+      console.log("   setting bubblePhotoCid to:", cid);
+
       await neighborhood.save();
+      console.log("   ✅ saved!");
 
       return neighborhood;
     },
