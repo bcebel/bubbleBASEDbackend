@@ -837,10 +837,11 @@ const resolvers = {
       const neighborhood = await Neighborhood.findById(neighborhoodId);
       if (!neighborhood) throw new Error("Neighborhood not found");
 
-      // ✅ Only the owner can set the bubble photo
-    if (neighborhood.owner.toString() !== user.userId.toString()) {
-      throw new Error("Only the owner can set the bubble photo");
-    }
+      // ✅ Use context.user.userId, not user.userId
+      if (neighborhood.owner.toString() !== context.user.userId.toString()) {
+        throw new Error("Only the owner can set the bubble photo");
+      }
+
       neighborhood.bubblePhotoCid = cid;
       await neighborhood.save();
 
