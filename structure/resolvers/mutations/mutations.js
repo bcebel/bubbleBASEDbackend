@@ -1635,21 +1635,26 @@ const resolvers = {
     },
 
     // Delete neighborhood (owner only)
-    deleteNeighborhood: async (_, { id }, context) => {
+    deleteNeighborhood: async (_, { neighborhoodId }, context) => {
       if (!context.user) throw new Error("Authentication required");
 
-      const neighborhood = await Neighborhood.findById(id);
+      const neighborhood = await Neighborhood.findById(neighborhoodId);
       if (!neighborhood) throw new Error("Neighborhood not found");
 
-      if (neighborhood.owner.toString() !== context.user.userId) {
-        throw new Error(
-          "Only the neighborhood owner can delete the neighborhood",
-        );
+      // Only the owner can delete
+      if (neighborhood.owner.toString() !== context.user.userId.toString()) {
+        throw new Error("Only the owner can delete this bubble");
       }
 
-      // Soft delete by setting isActive to false
-      neighborhood.isActive = false;
-      await neighborhood.save();
+      // Prevent deleting personal bubbles (they're the user's sanctuary)
+      if (neighborhood.type === "personal") {
+        throw new Error("Personal bubbles cannot be deleted");
+      }
+
+      // Clean up associated data
+      await Post.deleteMany({ neighborhood: neighborhoodId });
+      await Message.deleteMany({ neighborhood: neighborhoodId });
+      await Neighborhood.findByIdAndDelete(neighborhoodId);
 
       return true;
     },
