@@ -495,7 +495,7 @@ const typeDefs = gql`
       description: String
       rules: String
     ): Neighborhood
-    deleteNeighborhood(id: ID!): Boolean
+    deleteNeighborhood(neighborhoodId: ID!): Boolean
     attachMagnet(id: ID!, magnetLink: String!): Video
     joinNeighborhood(neighborhoodId: ID!): Neighborhood
     leaveNeighborhood(neighborhoodId: ID!): Boolean
