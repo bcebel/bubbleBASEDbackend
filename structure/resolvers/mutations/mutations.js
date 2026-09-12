@@ -1157,6 +1157,7 @@ const resolvers = {
       // ✅ NEW: If this message has media, also create a Post
       if (
         neighborhoodId &&
+        !sessionId && // 👈 livestream exclusion
         (imageUrl || videoUrl || magnetLink) &&
         fileType !== "video_chunk" &&
         fileType !== "video_header"
