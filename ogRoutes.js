@@ -43,7 +43,7 @@ router.get("/api/og/join/:code", async (req, res) => {
   <title>${name} — BubbleBased</title>
 
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="${name}" />
+  <meta property="og:title" content="Join the ${name} bubble" />
   <meta property="og:description" content="${description} · ${memberCount} members" />
   <meta property="og:image" content="${imageUrl}" />
   <meta property="og:url" content="${ogUrl}" />
