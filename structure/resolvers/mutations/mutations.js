@@ -320,16 +320,29 @@ const resolvers = {
       };
     },
     // Stream queries
-    streams: async (_, { status }) => {
-      const filter = {};
-      if (status) {
-        filter.status = status;
-      }
+    streams: async (_, { status }, context) => {
+      if (!context.user) throw new Error("Authentication required");
+
+      const userId = context.user.userId;
+
+      // Find neighborhoods the user is a member of
+      const memberships = await Neighborhood.find({
+        "members.user": userId,
+      }).select("_id");
+
+      const neighborhoodIds = memberships.map((n) => n._id);
+
+      const filter = {
+        neighborhood: { $in: neighborhoodIds },
+      };
+      if (status) filter.status = status;
+
       return await Stream.find(filter)
         .populate("startedBy")
         .populate("neighborhood")
         .sort({ createdAt: -1 });
     },
+    
     stream: async (_, { id }) =>
       await Stream.findById(id).populate("startedBy").populate("neighborhood"),
 
