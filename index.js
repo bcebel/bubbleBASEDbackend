@@ -19,6 +19,7 @@ import typeDefs from "./structure/typedefs/typedefs.js";
 import ModelSchema from "./structure/models/index.js";
 import mutationResolvers from "./structure/resolvers/mutations/mutations.js";
 //import subscriptionResolvers from "./structure/resolvers/subscriptions/subscriptions.js";
+import ogRoutes from "./ogRoutes.js";
 import connectDB from "./config/connection.js";
 import videoUploadHandler from "./videoUploadHandler.js";
 import Video from "./structure/models/Video.js";
@@ -30,6 +31,7 @@ import { reactiveBooster } from "./seedService.js";
 import fs from "fs";
 import StreamChunk from "./structure/models/StreamChunk.js";
 import Stream from "./structure/models/Stream.js";
+
 
 dotenv.config();
 // At the top of your backend file, after the imports
