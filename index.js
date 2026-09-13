@@ -116,7 +116,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
-
+app.use(ogRoutes);
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET;
 const PINATA_GATEWAY = process.env.PINATA_GATEWAY;
