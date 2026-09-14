@@ -15,6 +15,12 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { requireNeighborhoodAccess } from "../../../utils/authHelpers.js";
+import {
+  ROLE_RANK,
+  canModerate,
+  isOwner,
+  isModerator,
+} from "../../../utils/permissions.js";
 
 import StreamChunk from "../../models/StreamChunk.js";
 
@@ -342,7 +348,7 @@ const resolvers = {
         .populate("neighborhood")
         .sort({ createdAt: -1 });
     },
-    
+
     stream: async (_, { id }) =>
       await Stream.findById(id).populate("startedBy").populate("neighborhood"),
 
@@ -1276,47 +1282,35 @@ const resolvers = {
     },
 
     deleteMessage: async (_, { messageId }, context) => {
-      try {
-        if (!context.user) {
-          throw new Error("Authentication required");
-        }
+      if (!context.user) throw new Error("Authentication required");
 
-        const message = await Message.findById(messageId);
-        if (!message) {
-          throw new Error("Message not found");
-        }
+      // 1. Find the message and the neighborhood it belongs to
+      const message = await Message.findById(messageId);
+      if (!message) throw new Error("Message not found");
 
-        // Check if user owns the message or is admin
-        // ⬅️ FIXED: Changed context.user.id to context.user.userId for consistency
-        const isOwner = message.sender.toString() === context.user.userId;
-        if (!isOwner) {
-          // Optional: Check if user is neighborhood admin
-          const neighborhood = await Neighborhood.findOne({
-            _id: message.neighborhood,
-            $or: [
-              // ⬅️ FIXED: Changed context.user.id to context.user.userId
-              { owner: context.user.userId },
-              // ⬅️ FIXED: Changed context.user.id to context.user.userId
-              { "members.user": context.user.userId, "members.role": "admin" },
-            ],
-          });
-          if (!neighborhood) {
-            throw new Error("Not authorized to delete this message");
-          }
-        }
+      const neighborhood = await Neighborhood.findById(message.neighborhood);
+      if (!neighborhood) throw new Error("Neighborhood not found");
 
-        // Delete associated files from IPFS (optional)
-        if (message.imageUrl || message.videoUrl || message.fileUrl) {
-          console.log("Cleaning up media for message:", messageId);
-          // You might want to add IPFS cleanup logic here
-        }
+      // 2. Figure out who's doing the deleting (from context, not from arguments)
+      const deleterMember = neighborhood.members.find(
+        (m) => m.user.toString() === context.user.userId,
+      );
 
-        await Message.findByIdAndDelete(messageId);
-        return true;
-      } catch (error) {
-        console.error("Delete message error:", error);
-        throw new Error(`Failed to delete message: ${error.message}`);
+      // 3. Figure out who wrote the message (from the message itself)
+      const authorMember = neighborhood.members.find(
+        (m) => m.user.toString() === message.sender.toString(),
+      );
+
+      // 4. Apply the rule
+      if (!canModerate(deleterMember?.role, authorMember?.role)) {
+        // But also allow self-deletion
+        if (message.sender.toString() !== context.user.userId) {
+          throw new Error("Not authorized to delete this message");
+        }
       }
+
+      await Message.findByIdAndDelete(messageId);
+      return true;
     },
 
     deletePost: async (_, { postId }, context) => {
