@@ -413,25 +413,32 @@ const resolvers = {
     posts: async (_, { neighborhoodId }, context) => {
       if (!context.user) throw new Error("Authentication required");
 
-      const query = {};
+      if (!neighborhoodId) return [];
 
-      if (neighborhoodId) {
-        // ✅ Show posts from this neighborhood
-        query.neighborhood = neighborhoodId;
-      } else {
-        // ✅ If no neighborhoodId, return empty or error
-        // Or return your future "public" posts
-        return [];
+      if (!mongoose.Types.ObjectId.isValid(neighborhoodId)) {
+        throw new Error("Invalid neighborhood ID");
       }
 
-      const posts = await Post.find(query)
+      // Fetch the neighborhood
+      const neighborhood = await Neighborhood.findById(neighborhoodId);
+      if (!neighborhood) throw new Error("Neighborhood not found");
+
+      // Check membership
+      const isMember = neighborhood.members.some(
+        (member) => member.user.toString() === context.user.userId,
+      );
+
+      if (!isMember) throw new Error("Not a member of this neighborhood");
+
+      // Now query posts
+      const posts = await Post.find({ neighborhood: neighborhoodId })
         .populate("author", "username profilePhoto")
         .sort({ createdAt: -1 })
         .limit(50);
 
       return posts;
     },
-
+    
     post: async (_, { id }) =>
       await Post.findById(id).populate("author").populate("group"),
 
