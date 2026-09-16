@@ -438,7 +438,7 @@ const resolvers = {
 
       return posts;
     },
-    
+
     post: async (_, { id }) =>
       await Post.findById(id).populate("author").populate("group"),
 
@@ -454,11 +454,27 @@ const resolvers = {
     },
 
     // Get specific neighborhood
-    neighborhood: async (_, { id }) => {
-      return await Neighborhood.findById(id)
+    neighborhood: async (_, { id }, context) => {
+      if (!context.user) throw new Error("Authentication required");
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new Error("Invalid neighborhood ID");
+      }
+
+      const neighborhood = await Neighborhood.findById(id)
         .populate("owner", "username profilePhoto")
         .populate("members.user", "username profilePhoto")
         .populate("joinRequests.user", "username profilePhoto");
+
+      if (!neighborhood) throw new Error("Neighborhood not found");
+
+      const isMember = neighborhood.members.some(
+        (member) => member.user._id.toString() === context.user.userId,
+      );
+
+      if (!isMember) throw new Error("Not a member of this neighborhood");
+
+      return neighborhood;
     },
 
     // Get neighborhoods the current user belongs to
