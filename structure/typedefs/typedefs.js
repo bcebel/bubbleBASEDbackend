@@ -183,7 +183,7 @@ const typeDefs = gql`
 
   type Post {
     id: ID!
-    content: String!
+    content: String
     author: User!
     media: [PostMedia]
     affiliate: AffiliateData
