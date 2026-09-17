@@ -5,7 +5,7 @@ const postSchema = new mongoose.Schema(
   {
     content: {
       type: String,
-      default: "",
+      required: true,
       trim: true,
     },
     author: {
