@@ -230,6 +230,7 @@ export default (app) => {
        file.buffer,
        `image-${cid}`,
        announce,
+       [ipfsUrl],
      );
 
         // Save to Image model

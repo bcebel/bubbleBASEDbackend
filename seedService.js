@@ -34,7 +34,7 @@ class ReactiveSeedBooster {
    * Start seeding a chunk for livestream
    * For livestreams, we NEVER stop seeding automatically
    */
-  async boostChunkIfNeeded(filePath, chunkId, announceUrls) {
+  async boostChunkIfNeeded(filePath, chunkId, announceUrls, webSeedUrls) {
     if (this.activeTorrents.has(chunkId)) {
       const job = this.activeTorrents.get(chunkId);
       return job.torrent.magnetURI;
@@ -119,7 +119,7 @@ class ReactiveSeedBooster {
         chunksToRemove.push(chunkId);
       }
     }
-/*
+    /*
     console.log(
       `🧼 Stopping ${chunksToRemove.length} chunks from stream ${sessionId}`,
     );
