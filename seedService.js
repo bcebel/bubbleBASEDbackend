@@ -52,7 +52,7 @@ class ReactiveSeedBooster {
     };
 
     return new Promise((resolve, reject) => {
-      this.client.seed(input, torrentOptions, (torrent) => {
+      this.client.seed(filePath, torrentOptions, (torrent) => {
         /*   console.log(
           `📤 Seeding chunk ${chunkId}. InfoHash: ${torrent.infoHash.substring(
             0,

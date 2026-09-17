@@ -299,7 +299,7 @@ export default (app) => {
                   resolve(mLink);
                 },
               );
-            });
+            }); 
 
             sliceRecords.push({
               index: i,
