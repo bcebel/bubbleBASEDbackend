@@ -49,6 +49,7 @@ class ReactiveSeedBooster {
       name: isGallery
         ? `bubble-media-${chunkId}`
         : `livestream-${chunkId}-${Date.now()}`,
+      urlList: webSeedUrls || [],
     };
 
     return new Promise((resolve, reject) => {

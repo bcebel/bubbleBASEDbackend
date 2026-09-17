@@ -295,6 +295,7 @@ export default (app) => {
                     chunkBuffer,
                     `gallery-${cid}`,
                     announce,
+                    [ipfsUrl],
                   );
                   resolve(mLink);
                 },
@@ -353,6 +354,7 @@ export default (app) => {
        file.buffer,
        `video-${cid}`,
        announce,
+       [ipfsUrl],
      );
 
           const newVideo = new Video({
