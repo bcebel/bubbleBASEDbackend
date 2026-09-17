@@ -53,7 +53,21 @@ const getFileType = (mimetype, originalname) => {
 
   const ext = originalname.split(".").pop().toLowerCase();
   if (["mp4", "mov", "avi", "mkv", "webm"].includes(ext)) return "video";
-  if (["jpg", "jpeg", "png", "gif", "webp", "heic", "avif"].includes(ext))
+  if (
+    [
+      "jpg",
+      "jpeg",
+      "png",
+      "gif",
+      "webp",
+      "heic",
+      "avif",
+      "tiff",
+      "bmp",
+      "svg",
+      "ico",
+    ].includes(ext)
+  )
     return "image";
   if (["mp3", "wav", "ogg", "m4a"].includes(ext)) return "audio";
 
@@ -212,24 +226,11 @@ export default (app) => {
 
         // Generate magnet link
         // Fix for images
-        const magnetLink = await new Promise((resolve, reject) => {
-          createTorrent(
-            file.buffer,
-            { announce, name: file.originalname },
-            (err, torrentBuf) => {
-              if (err) return reject(err);
-              // Convert torrent buffer to magnet URI
-              const client = new WebTorrent();
-              client.seed(
-                file.buffer,
-                { name: file.originalname },
-                (torrent) => {
-                  resolve(torrent.magnetURI);
-                },
-              );
-            },
-          );
-        });
+     const magnetLink = await reactiveBooster.boostChunkIfNeeded(
+       file.buffer,
+       `image-${cid}`,
+       announce,
+     );
 
         // Save to Image model
         const newImage = new Image({
@@ -348,23 +349,11 @@ export default (app) => {
             file.mimetype,
           );
 
-          const magnetLink = await new Promise((resolve, reject) => {
-            createTorrent(
-              fullBuffer,
-              { announce, name: file.originalname },
-              (err, torrentBuf) => {
-                if (err) return reject(err);
-                const client = new WebTorrent();
-                client.seed(
-                  fullBuffer,
-                  { name: file.originalname },
-                  (torrent) => {
-                    resolve(torrent.magnetURI);
-                  },
-                );
-              },
-            );
-          });
+     const magnetLink = await reactiveBooster.boostChunkIfNeeded(
+       file.buffer,
+       `video-${cid}`,
+       announce,
+     );
 
           const newVideo = new Video({
             title: title || file.originalname,
