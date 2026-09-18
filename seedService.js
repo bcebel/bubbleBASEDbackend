@@ -41,16 +41,23 @@ class ReactiveSeedBooster {
     }
 
     const isGallery = chunkId.startsWith("gallery-");
+    
+const getSeedName = (chunkId) => {
+  if (chunkId.startsWith("gallery-")) return `gallery-${chunkId.slice(8)}`;
+  if (chunkId.startsWith("image-")) return `image-${chunkId.slice(6)}`;
+  if (chunkId.startsWith("video-")) return `video-${chunkId.slice(6)}`;
+  if (chunkId.startsWith("live_") || chunkId.includes("-chunk-")) {
+    return `livestream-${chunkId}`;
+  }
+  return `media-${chunkId}`;
+};
 
-    const torrentOptions = {
-      // ✅ FORCE YOUR TRACKER!
-      announce:
-        announceUrls && announceUrls.length > 0 ? announceUrls : this.trackers,
-      name: isGallery
-        ? `bubble-media-${chunkId}`
-        : `livestream-${chunkId}-${Date.now()}`,
-      urlList: webSeedUrls || [],
-    };
+const torrentOptions = {
+  announce:
+    announceUrls && announceUrls.length > 0 ? announceUrls : this.trackers,
+  name: getSeedName(chunkId),
+  urlList: webSeedUrls || [],
+};
 
     return new Promise((resolve, reject) => {
       this.client.seed(filePath, torrentOptions, (torrent) => {
