@@ -35,6 +35,7 @@ class ReactiveSeedBooster {
    * For livestreams, we NEVER stop seeding automatically
    */
   async boostChunkIfNeeded(filePath, chunkId, announceUrls, webSeedUrls) {
+      console.log(`🌱 boostChunkIfNeeded called with chunkId: "${chunkId}"`);
     if (this.activeTorrents.has(chunkId)) {
       const job = this.activeTorrents.get(chunkId);
       return job.torrent.magnetURI;
