@@ -1018,6 +1018,10 @@ const resolvers = {
       const populated = await post.populate("author", "username profilePhoto");
 
       console.log("✅ Post created in neighborhood:", populated.neighborhood);
+       console.log(
+         "📥 createPost input.media:",
+         JSON.stringify(input.media, null, 2),
+       );
       return populated;
     },
 
