@@ -151,7 +151,7 @@ const typeDefs = gql`
   input MediaInput {
     url: String
     cid: String
-    magnetLink: String
+    magnetURI: String
     mediaType: String # "image", "video", "audio", "file"
   }
 
@@ -177,7 +177,7 @@ const typeDefs = gql`
   type PostMedia {
     url: String
     cid: String
-    magnetLink: String
+    magnetURI: String
     mediaType: String
   }
 

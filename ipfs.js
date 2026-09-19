@@ -87,7 +87,7 @@ async function main() {
           { announce: ["wss://tracker.openwebtorrent.com"] },
           (torrent) => {
             console.log("File is now seeding.");
-            console.log("Magnet link:", torrent.magnetLink);
+            console.log("Magnet link:", torrent.magnetURI);
 
             // Keep the script running to continue seeding
             console.log("Press Ctrl+C to stop seeding.");

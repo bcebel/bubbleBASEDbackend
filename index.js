@@ -409,7 +409,7 @@ app.post(
       await fs.promises.rename(writePath, tempFilePath);
 
 
-      const magnetLink = await reactiveBooster.boostChunkIfNeeded(
+      const magnetUri = await reactiveBooster.boostChunkIfNeeded(
         tempFilePath,
         `${sessionId}-${indexInt}`,
         trackers,
@@ -451,7 +451,7 @@ app.post(
           stream: parentStream ? parentStream._id : undefined,
           sessionId: sessionId,
           chunkIndex: indexInt,
-          magnetLink: magnetLink,
+          magnetLink: magnetUri,
           fileName: file.originalname || `chunk-${indexInt}.${ext}`,
           fileSize: file.size || 0,
           fileType: isHeader ? "video_header" : "video_chunk",
@@ -486,7 +486,7 @@ app.post(
           id: newChunk.id,
           sessionId: sessionId,
           chunkIndex: newChunk.chunkIndex,
-          magnetLink: magnetLink,
+          magnetLink: magnetUri,
           fileName: newChunk.fileName,
           fileSize: newChunk.fileSize,
           fileType: newChunk.fileType,
@@ -500,7 +500,7 @@ app.post(
       console.log(`✅ [LIVE-CHUNK] Chunk ${indexInt} processed successfully.`);
       return res.json({
         success: true,
-        magnetLink,
+        magnetUri,
         chunkId: newChunk._id,
         streamFound: !!parentStream,
       });

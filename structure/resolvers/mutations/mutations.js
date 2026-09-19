@@ -1003,8 +1003,6 @@ const resolvers = {
         throw new Error("Not a member of this neighborhood");
       }
       // Create the post - ALWAYS neighborhood!
-      // Create the post - ALWAYS neighborhood!
-      // Create the post - ALWAYS neighborhood!
       const post = new Post({
         content: input.content,
         author: userId,
@@ -1020,10 +1018,6 @@ const resolvers = {
       const populated = await post.populate("author", "username profilePhoto");
 
       console.log("✅ Post created in neighborhood:", populated.neighborhood);
-      console.log(
-        "📥 createPost input.media:",
-        JSON.stringify(input.media, null, 2),
-      );
       return populated;
     },
 
@@ -1220,7 +1214,7 @@ const resolvers = {
               {
                 url: imageUrl || videoUrl,
                 cid: ipfsHash,
-                magnetLink: magnetLink,
+                magnetURI: magnetLink,
                 mediaType: fileType === "video" ? "video" : "image",
                 fileName: fileName,
               },
