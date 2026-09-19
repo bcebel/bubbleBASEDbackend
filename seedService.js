@@ -10,23 +10,49 @@ class ReactiveSeedBooster {
       maxConns: 50, // Increased connections
       dht: true, // ENABLE DHT for better peer discovery
       lsd: true, // Enable local peer discovery
+
+
       tracker: {
-        rtcConfig: {
-          iceServers: [
-            { urls: "stun:stun.l.google.com:19302" },
-            { urls: "stun:global.stun.twilio.com:3478" },
-          ],
+
+           rtcConfig: {
+                iceServers: [
+                  { urls: "stun:stun.relay.metered.ca:80" },
+                  {
+                    urls: "turn:global.relay.metered.ca:80",
+                    username: "fe67734f65cabae0c1f0bf61",
+                    credential: "AY3FDMwL9QjEIZ2R",
+                  },
+                  { urls: "stun:stun.l.google.com:19302" },
+               { urls: "stun:stun1.l.google.com:19302" },
+                     { urls: "stun:global.stun.twilio.com:3478" }
+                ],
         },
+
       },
     });
 
     console.log("WebRTC support:", WebTorrent.WEBRTC_SUPPORT);
-    
+
     this.trackers = [
-      "wss://tracker-0ad4cca9fd92.herokuapp.com",
-      "wss://tracker.openwebtorrent.com",
-      "wss://tracker.webtorrent.dev", // Added UDP tracker
-    ];
+ "wss://tracker-0ad4cca9fd92.herokuapp.com",
+        "wss://tracker.files.fm:7073/announce",
+        "wss://tracker.webtorrent.dev",
+        "wss://tracker.openwebtorrent.com",
+        "wss://tracker.btorrent.xyz",
+        "wss://tracker.files.fm:7073",
+        "udp://tracker.opentrackr.org:1337/announce",
+        "udp://open.tracker.cl:1337/announce",
+        "udp://9.rarbg.to:2710/announce",
+        "udp://tracker.coppersurfer.tk:6969/announce",
+        "udp://tracker.leechers-paradise.org:6969/announce",
+        "udp://tracker.internetwarriors.net:1337/announce",
+        "udp://exodus.desync.com:6969/announce",
+        "udp://tracker.moeking.me:6969/announce",
+        "udp://opentor.org:2710/announce",
+        "udp://tracker.cyberia.is:6969/announce",
+        "udp://tracker3.itzmx.com:6961/announce"
+      ]; // Added UDP tracker
+    
 
     this.activeTorrents = new Map();
     console.log("🎯 Reactive Seed Booster started (P2P Livestream Optimized)");
