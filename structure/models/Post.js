@@ -19,7 +19,7 @@ const postSchema = new mongoose.Schema(
       {
         url: { type: String },
         cid: { type: String },
-        magnetURI: { type: String },
+        magnetLink: { type: String },
         mediaType: {
           type: String,
           enum: ["image", "video", "audio", "file"],

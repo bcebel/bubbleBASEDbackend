@@ -38,7 +38,7 @@ class ReactiveSeedBooster {
       console.log(`🌱 boostChunkIfNeeded called with chunkId: "${chunkId}"`);
     if (this.activeTorrents.has(chunkId)) {
       const job = this.activeTorrents.get(chunkId);
-      return job.torrent.magnetURI;
+      return job.torrent.magnetLink;
     }
 
     const isGallery = chunkId.startsWith("gallery-");
@@ -87,7 +87,7 @@ const torrentOptions = {
         };
 
         this.activeTorrents.set(chunkId, boosterJob);
-        resolve(torrent.magnetURI);
+        resolve(torrent.magnetLink);
       });
     });
   }
