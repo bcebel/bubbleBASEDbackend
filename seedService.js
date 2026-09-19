@@ -20,6 +20,8 @@ class ReactiveSeedBooster {
       },
     });
 
+    console.log("WebRTC support:", WebTorrent.WEBRTC_SUPPORT);
+    
     this.trackers = [
       "wss://tracker-0ad4cca9fd92.herokuapp.com",
       "wss://tracker.openwebtorrent.com",
