@@ -1214,7 +1214,7 @@ const resolvers = {
               {
                 url: imageUrl || videoUrl,
                 cid: ipfsHash,
-                magnetURI: magnetLink,
+                magnetLink: magnetLink,
                 mediaType: fileType === "video" ? "video" : "image",
                 fileName: fileName,
               },
