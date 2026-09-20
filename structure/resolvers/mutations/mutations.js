@@ -495,7 +495,7 @@ const resolvers = {
       if (!context.user) throw new Error("Authentication required");
       return await Neighborhood.find({
         "members.user": context.user.userId,
-        type: { $nin: ["public", "private"] },
+        type:"personal",
         isActive: true,
       })
         .populate("owner", "username profilePhoto")
