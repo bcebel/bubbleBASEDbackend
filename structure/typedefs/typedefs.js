@@ -334,6 +334,7 @@ const typeDefs = gql`
     neighborhoods: [Neighborhood]
     neighborhood(id: ID!): Neighborhood
     myNeighborhoods: [Neighborhood]
+    myPersonalBubbles: [Neighborhood!]!
     discoverNeighborhoods: [Neighborhood] # Public neighborhoods to discover
     images: [Image!]!
     image(id: ID!): Image

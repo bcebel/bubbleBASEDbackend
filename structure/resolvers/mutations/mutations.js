@@ -491,6 +491,17 @@ const resolvers = {
         .sort({ createdAt: -1 });
     },
 
+    myPersonalBubbles: async (_, __, context) => {
+      if (!context.user) throw new Error("Authentication required");
+      return await Neighborhood.find({
+        type: "personal",
+        owner: context.user.userId,
+        isActive: true,
+      })
+        .populate("owner", "username profilePhoto")
+        .populate("members.user", "username profilePhoto");
+    },
+
     // Discover public neighborhoods
     discoverNeighborhoods: async () => {
       return await Neighborhood.find({
