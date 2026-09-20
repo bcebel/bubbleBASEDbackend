@@ -494,12 +494,13 @@ const resolvers = {
     myPersonalBubbles: async (_, __, context) => {
       if (!context.user) throw new Error("Authentication required");
       return await Neighborhood.find({
-        type: "personal",
-        owner: context.user.userId,
+        "members.user": context.user.userId,
+        type: { $nin: ["public", "private"] },
         isActive: true,
       })
         .populate("owner", "username profilePhoto")
-        .populate("members.user", "username profilePhoto");
+        .populate("members.user", "username profilePhoto")
+        .sort({ createdAt: -1 });
     },
 
     // Discover public neighborhoods
