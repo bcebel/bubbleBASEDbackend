@@ -412,25 +412,25 @@ const resolvers = {
 
     posts: async (_, { neighborhoodId }, context) => {
       if (!context.user) throw new Error("Authentication required");
-
       if (!neighborhoodId) return [];
-
       if (!mongoose.Types.ObjectId.isValid(neighborhoodId)) {
         throw new Error("Invalid neighborhood ID");
       }
 
-      // Fetch the neighborhood
       const neighborhood = await Neighborhood.findById(neighborhoodId);
       if (!neighborhood) throw new Error("Neighborhood not found");
 
-      // Check membership
       const isMember = neighborhood.members.some(
         (member) => member.user.toString() === context.user.userId,
       );
 
-      if (!isMember) throw new Error("Not a member of this neighborhood");
+      // ✅ New: public bubbles are viewable by any logged-in user
+      const isPublic = neighborhood.type === "public";
 
-      // Now query posts
+      if (!isMember && !isPublic) {
+        throw new Error("Not a member of this neighborhood");
+      }
+
       const posts = await Post.find({ neighborhood: neighborhoodId })
         .populate("author", "username profilePhoto")
         .sort({ createdAt: -1 })
