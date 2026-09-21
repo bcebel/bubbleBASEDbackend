@@ -16,6 +16,10 @@ const userSchema = new Schema(
       unique: true,
       match: [/.+@.+\..+/, "Must match an email address!"],
     },
+    isPublic: {
+      type: Boolean,
+      default: false,
+    },
     bio: {
       type: String,
       default: "",
@@ -30,7 +34,7 @@ const userSchema = new Schema(
       type: String,
       default: function () {
         return `https://ui-avatars.com/api/?name=${encodeURIComponent(
-          this.username
+          this.username,
         )}&background=00FF00&color=000`;
       },
     },
@@ -75,7 +79,7 @@ const userSchema = new Schema(
       },
     },
     toObject: { virtuals: true },
-  }
+  },
 );
 
 // Pre-save middleware to hash password (This is correct)

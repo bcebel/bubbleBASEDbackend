@@ -420,21 +420,27 @@ const resolvers = {
       const neighborhood = await Neighborhood.findById(neighborhoodId);
       if (!neighborhood) throw new Error("Neighborhood not found");
 
-      const isMember = neighborhood.members.some(
-        (member) => member.user.toString() === context.user.userId,
-      );
+ const isMember = neighborhood.members.some(
+   (member) => member.user.toString() === context.user.userId,
+ );
+ const isPublic = neighborhood.type === "public";
+ const isGuest = !isMember && isPublic;
 
-      // ✅ New: public bubbles are viewable by any logged-in user
-      const isPublic = neighborhood.type === "public";
+ if (!isMember && !isPublic) {
+   throw new Error("Not a member of this neighborhood");
+ }
 
-      if (!isMember && !isPublic) {
-        throw new Error("Not a member of this neighborhood");
-      }
+ // Guests only see posts from authors who are public
+ const query = { neighborhood: neighborhoodId };
+ if (isGuest) {
+   const publicUserIds = await User.find({ isPublic: true }).distinct("_id");
+   query.author = { $in: publicUserIds };
+ }
 
-      const posts = await Post.find({ neighborhood: neighborhoodId })
-        .populate("author", "username profilePhoto")
-        .sort({ createdAt: -1 })
-        .limit(50);
+ const posts = await Post.find(query)
+   .populate("author", "username profilePhoto")
+   .sort({ createdAt: -1 })
+   .limit(50);
 
       return posts;
     },
