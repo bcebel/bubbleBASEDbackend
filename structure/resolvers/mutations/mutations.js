@@ -13,6 +13,7 @@ import Message from "../../models/Message.js";
 import Image from "../../models/Image.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { canRead } from "../../../utils/bubbleAccess.js";
 import crypto from "crypto";
 import { requireNeighborhoodAccess } from "../../../utils/authHelpers.js";
 import {
@@ -411,7 +412,6 @@ const resolvers = {
     },
 
     posts: async (_, { neighborhoodId }, context) => {
-      if (!context.user) throw new Error("Authentication required");
       if (!neighborhoodId) return [];
       if (!mongoose.Types.ObjectId.isValid(neighborhoodId)) {
         throw new Error("Invalid neighborhood ID");
@@ -420,27 +420,29 @@ const resolvers = {
       const neighborhood = await Neighborhood.findById(neighborhoodId);
       if (!neighborhood) throw new Error("Neighborhood not found");
 
- const isMember = neighborhood.members.some(
-   (member) => member.user.toString() === context.user.userId,
- );
- const isPublic = neighborhood.type === "public";
- const isGuest = !isMember && isPublic;
+      if (!canRead(neighborhood, context.user)) {
+        throw new Error("Not a member of this neighborhood");
+      }
 
- if (!isMember && !isPublic) {
-   throw new Error("Not a member of this neighborhood");
- }
+      const isMember =
+        context.user &&
+        neighborhood.members.some(
+          (member) => member.user.toString() === context.user.userId,
+        );
 
- // Guests only see posts from authors who are public
- const query = { neighborhood: neighborhoodId };
- if (isGuest) {
-   const publicUserIds = await User.find({ isPublic: true }).distinct("_id");
-   query.author = { $in: publicUserIds };
- }
+      // Guests only see posts from authors who are public
+      const query = { neighborhood: neighborhoodId };
+      if (!isMember) {
+        const publicUserIds = await User.find({ isPublic: true }).distinct(
+          "_id",
+        );
+        query.author = { $in: publicUserIds };
+      }
 
- const posts = await Post.find(query)
-   .populate("author", "username profilePhoto")
-   .sort({ createdAt: -1 })
-   .limit(50);
+      const posts = await Post.find(query)
+        .populate("author", "username profilePhoto")
+        .sort({ createdAt: -1 })
+        .limit(50);
 
       return posts;
     },

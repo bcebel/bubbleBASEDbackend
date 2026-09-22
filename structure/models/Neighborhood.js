@@ -34,6 +34,11 @@ const NeighborhoodSchema = new Schema(
       ref: "User",
       required: true,
     },
+     visibility: {
+  type: String,
+  enum: ["private", "global", "public"],  // or similar
+  default: "private",
+} ,
 
     members: [
       {
