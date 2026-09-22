@@ -130,6 +130,12 @@ const NeighborhoodSchema = new Schema(
         },
       },
     ],
+
+    joinPolicy: {
+  type: String,
+  enum: ["invite_only", "request", "open"],
+  default: "invite_only",
+},
     // Invite settings
     allowMemberInvites: {
       type: Boolean,
@@ -137,7 +143,7 @@ const NeighborhoodSchema = new Schema(
     },
     maxMembers: {
       type: Number,
-      default: 100,
+      default: 10000,
     },
   },
   {

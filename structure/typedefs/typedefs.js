@@ -11,6 +11,7 @@ const typeDefs = gql`
     profilePhoto: String
     videos: [Video!]
     streams: [Stream!]
+    isPublic: Boolean
     chats: [Chat!] # Chats the user is involved in
     posts: [Post!] # Posts the user has created
     groups: [Group!] # Groups the user is part of
@@ -358,6 +359,7 @@ const typeDefs = gql`
   }
 
   type Mutation {
+    updateVisibility(isPublic: Boolean!): User!
     updateBubblePhoto(neighborhoodId: ID!, cid: String!): Neighborhood
     createDirectMessageBubble(userId: ID!): Neighborhood
     acceptBubbleInvite(directMessageBubbleId: ID!, sourceBubbleId: ID!): Boolean

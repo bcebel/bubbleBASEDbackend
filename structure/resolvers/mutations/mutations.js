@@ -893,6 +893,15 @@ const resolvers = {
   },
 
   Mutation: {
+    updateVisibility: async (_, { isPublic }, context) => {
+      if (!context.user) throw new Error("Authentication required");
+      return await User.findByIdAndUpdate(
+        context.user.userId,
+        { isPublic },
+        { new: true },
+      );
+    },
+    
     updateBubblePhoto: async (_, { neighborhoodId, cid }, context) => {
       console.log("🔥 updateBubblePhoto called");
       console.log("   neighborhoodId:", neighborhoodId);
