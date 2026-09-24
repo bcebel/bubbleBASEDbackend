@@ -339,9 +339,14 @@ const resolvers = {
 
       const neighborhoodIds = memberships.map((n) => n._id);
 
+      // Calculate 24 hours ago from right now
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
       const filter = {
         neighborhood: { $in: neighborhoodIds },
+        createdAt: { $gte: twentyFourHoursAgo }, // Only streams created in the last 24h
       };
+
       if (status) filter.status = status;
 
       return await Stream.find(filter)
@@ -901,7 +906,7 @@ const resolvers = {
         { new: true },
       );
     },
-    
+
     updateBubblePhoto: async (_, { neighborhoodId, cid }, context) => {
       console.log("🔥 updateBubblePhoto called");
       console.log("   neighborhoodId:", neighborhoodId);
