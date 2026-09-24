@@ -340,11 +340,11 @@ const resolvers = {
       const neighborhoodIds = memberships.map((n) => n._id);
 
       // Calculate 24 hours ago from right now
-      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const twelveHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 500);
 
       const filter = {
         neighborhood: { $in: neighborhoodIds },
-        createdAt: { $gte: twentyFourHoursAgo }, // Only streams created in the last 24h
+        createdAt: { $gte: twelveHoursAgo }, // Only streams created in the last 24h
       };
 
       if (status) filter.status = status;
