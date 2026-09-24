@@ -53,7 +53,7 @@ app.options("/api/webseed/:cid", (req, res) => {
   res.setHeader("Access-Control-Allow-Headers", "Range");
   res.setHeader(
     "Access-Control-Expose-Headers",
-    "Content-Length, Content-Range, Accept-Ranges",
+    "Content-Length, Content-Range, Accept-Ranges, ETag",
   );
   res.sendStatus(204);
 });
@@ -62,36 +62,45 @@ app.get("/api/webseed/:cid", async (req, res) => {
   const { cid } = req.params;
   const pinataUrl = `https://fuchsia-solid-parrot-571.mypinata.cloud/ipfs/${cid}?pinataGatewayToken=${process.env.PINATA_TOKEN}`;
 
-  const headers = {};
-  if (req.headers.range) headers["Range"] = req.headers.range;
-
-  const upstream = await fetch(pinataUrl, { headers });
-
-  // CORS
+  // CORS headers
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Range");
   res.setHeader(
     "Access-Control-Expose-Headers",
-    "Content-Length, Content-Range, Accept-Ranges",
+    "Content-Length, Content-Range, Accept-Ranges, ETag",
   );
 
-  // Content negotiation — critical for range requests
-  res.setHeader("Accept-Ranges", "bytes");
-  for (const h of [
-    "content-type",
-    "content-length",
-    "content-range",
-    "etag",
-    "last-modified",
-  ]) {
-    const v = upstream.headers.get(h);
-    if (v) res.setHeader(h, v);
-  }
+  // Cache headers — cid is content-addressed, so this is safe forever
+  res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+  res.setHeader("ETag", `"${cid}"`);
 
-  // MUST preserve upstream status (206 for range, 200 for full)
-  res.status(upstream.status);
-  Readable.fromWeb(upstream.body).pipe(res);
+  try {
+    const headers = {};
+    if (req.headers.range) headers["Range"] = req.headers.range;
+
+    const upstream = await fetch(pinataUrl, { headers });
+    res.status(upstream.status);
+    res.setHeader("Accept-Ranges", "bytes");
+
+    for (const h of [
+      "content-type",
+      "content-length",
+      "content-range",
+      "etag",
+      "last-modified",
+    ]) {
+      const v = upstream.headers.get(h);
+      if (v) res.setHeader(h, v);
+    }
+
+    if (!upstream.body) return res.end();
+    Readable.fromWeb(upstream.body).pipe(res);
+  } catch (err) {
+    console.error("[webseed] error", err);
+    if (!res.headersSent) res.status(502).json({ error: "upstream failed" });
+    else res.end();
+  }
 });
 
 
