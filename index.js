@@ -31,7 +31,7 @@ import { reactiveBooster } from "./seedService.js";
 import fs from "fs";
 import StreamChunk from "./structure/models/StreamChunk.js";
 import Stream from "./structure/models/Stream.js";
-
+import { Readable } from "node:stream";
 
 dotenv.config();
 // At the top of your backend file, after the imports
@@ -207,7 +207,7 @@ app.get("/api/webseed/:cid", async (req, res) => {
 
   // MUST preserve upstream status (206 for range, 200 for full)
   res.status(upstream.status);
-  upstream.body.pipe(res);
+ Readable.fromWeb(upstream.body).pipe(res);
 });
 
 app.options("/api/webseed/:cid", (req, res) => {
