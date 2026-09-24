@@ -226,11 +226,12 @@ export default (app) => {
 
         // Generate magnet link
         // Fix for images
+        const webseed = `${process.env.BACKEND_URL}/api/webseed/${cid}`;
      const magnetLink = await reactiveBooster.boostChunkIfNeeded(
        file.buffer,
        `image-${cid}`,
        announce,
-       [ipfsUrl],
+       [webseed],
      );
 
         // Save to Image model
