@@ -496,7 +496,7 @@ const resolvers = {
 
       return await Neighborhood.find({
         "members.user": context.user.userId,
-        type: { $nin: ["direct", "personal", "global"] },
+        type: { $nin: ["direct", "personal",] },
         isActive: true,
       })
         .populate("owner", "username profilePhoto")
