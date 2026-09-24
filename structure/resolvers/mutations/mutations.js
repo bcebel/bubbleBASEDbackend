@@ -525,8 +525,20 @@ const resolvers = {
         .populate("owner", "username profilePhoto")
         .populate("members.user", "username profilePhoto")
         .sort({ createdAt: -1 })
-        .limit(20); // Limit for discovery feed
+        .limit(100); // Limit for discovery feed
     },
+
+    discoverGlobalNeighborhoods: async () => {
+      return await Neighborhood.find({
+        type: "global",
+        isActive: true,
+      })
+        .populate("owner", "username profilePhoto")
+        .populate("members.user", "username profilePhoto")
+        .sort({ createdAt: -1 })
+        .limit(100); // Limit for discovery feed
+    },
+
     neighborhoodMessages: async (_, { neighborhoodId }, context) => {
       if (!context.user) throw new Error("Authentication required");
 
