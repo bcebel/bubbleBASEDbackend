@@ -184,7 +184,7 @@ const typeDefs = gql`
     cid: String
     url: String
     magnetURI: String
-    mediaType: String
+    mediaType: String!
     fileName: String
     fileSize: Int
     mimeType: String
