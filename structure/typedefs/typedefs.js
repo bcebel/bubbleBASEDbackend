@@ -181,10 +181,10 @@ const typeDefs = gql`
 
   type PostMedia {
     _id: ID!
-    cid: String!
+    cid: String
     url: String
     magnetURI: String
-    mediaType: String!
+    mediaType: String
     fileName: String
     fileSize: Int
     mimeType: String
