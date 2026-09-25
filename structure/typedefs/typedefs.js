@@ -153,7 +153,11 @@ const typeDefs = gql`
     url: String
     cid: String
     magnetURI: String
-    mediaType: String # "image", "video", "audio", "file"
+    mediaType: String
+    fileName: String
+    fileSize: Int
+    mimeType: String
+    thumbnailUrl: String
   }
 
   input CreatePostInput {
@@ -176,10 +180,15 @@ const typeDefs = gql`
   }
 
   type PostMedia {
+    _id: ID!
+    cid: String!
     url: String
-    cid: String
     magnetURI: String
-    mediaType: String
+    mediaType: String!
+    fileName: String
+    fileSize: Int
+    mimeType: String
+    thumbnailUrl: String
   }
 
   type Post {

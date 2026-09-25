@@ -25,7 +25,6 @@ import {
 
 import StreamChunk from "../../models/StreamChunk.js";
 
-
 // In validateAndExtractAffiliateHtml, loosen the validation:
 const validateAndExtractAffiliateHtml = (html) => {
   const allowedDomains = [
@@ -50,10 +49,12 @@ const validateAndExtractAffiliateHtml = (html) => {
   }
 
   const hrefUrl = hrefMatch[1];
-  
+
   // Check if it's from an approved domain
-  const isApproved = hrefUrl.match(new RegExp(`https?://[^/]*\\.(${domainPattern})/`, "i"));
-  
+  const isApproved = hrefUrl.match(
+    new RegExp(`https?://[^/]*\\.(${domainPattern})/`, "i"),
+  );
+
   if (!isApproved) {
     return {
       isValid: false,
@@ -69,12 +70,12 @@ const validateAndExtractAffiliateHtml = (html) => {
   const altMatch = html.match(/alt="([^"]*)"/i);
   const titleMatch = html.match(/title="([^"]*)"/i);
   const textMatch = html.match(/<a[^>]*>(.*?)<\/a>/i);
-  
+
   let title = "Affiliate Link";
   if (altMatch) title = altMatch[1];
   else if (titleMatch) title = titleMatch[1];
   else if (textMatch) {
-    const text = textMatch[1].replace(/<[^>]*>/g, '').trim();
+    const text = textMatch[1].replace(/<[^>]*>/g, "").trim();
     if (text) title = text;
   }
 
@@ -496,7 +497,7 @@ const resolvers = {
 
       return await Neighborhood.find({
         "members.user": context.user.userId,
-        type: { $nin: ["direct", "personal",] },
+        type: { $nin: ["direct", "personal"] },
         isActive: true,
       })
         .populate("owner", "username profilePhoto")
