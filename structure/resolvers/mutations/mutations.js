@@ -92,6 +92,32 @@ const validateAndExtractAffiliateHtml = (html) => {
 
 const resolvers = {
   Query: {
+    myPosts: async (_, __, context) => {
+      if (!context.user) return [];
+      return await Post.find({ author: context.user.userId })
+        .populate("author", "username profilePhoto")
+        .populate("neighborhood", "id name")
+        .sort({ createdAt: -1 })
+        .limit(100);
+    },
+
+    myNeighborhoodsPosts: async (_, __, context) => {
+      if (!context.user) return [];
+
+      const neighborhoodIds = await Neighborhood.find({
+        "members.user": context.user.userId,
+        isActive: true,
+      }).distinct("_id");
+
+      return await Post.find({
+        neighborhood: { $in: neighborhoodIds },
+      })
+        .populate("author", "username profilePhoto")
+        .populate("neighborhood", "id name")
+        .sort({ createdAt: -1 })
+        .limit(100);
+    },
+
     comments: async (_, { postId }, context) => {
       if (!context.user) throw new Error("Authentication required");
 
@@ -1019,6 +1045,7 @@ const resolvers = {
       // 4. Populate author and return
       return await comment.populate("author", "username profilePhoto");
     },
+
     // In your createPost resolver
     // CREATE_POST mutation resolver
     createPost: async (_, { input }, context) => {
