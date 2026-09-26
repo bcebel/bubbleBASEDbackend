@@ -194,14 +194,14 @@ const typeDefs = gql`
   type Post {
     id: ID!
     content: String
-    author: User!
+    author: User
     media: [PostMedia]
     affiliate: AffiliateData
     feedType: String!
-    neighborhood: Neighborhood!
+    neighborhood: Neighborhood
     group: Group
     likes: [User]
-    comments: [Comment!]!
+    comments: [Comment!]
     isPinned: Boolean
     commentCount: Int!
     createdAt: String
