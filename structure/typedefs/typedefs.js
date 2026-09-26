@@ -286,9 +286,9 @@ const typeDefs = gql`
   }
 
   type Query {
-    myPosts: [Post!]!
-    myNeighborhoodsPosts: [Post!]!
-    neighborhoodPosts(neighborhoodId: ID!): [Post!]!
+    myPosts: [Post!]
+    myNeighborhoodsPosts: [Post!]
+    neighborhoodPosts(neighborhoodId: ID!): [Post!]
     myDirectMessageBubbles: [Neighborhood]
     streamBySessionId(sessionId: String!): Stream
     streamChunks(sessionId: String!): [StreamChunk]
