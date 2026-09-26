@@ -495,28 +495,45 @@ const resolvers = {
 
     // Get specific neighborhood
     neighborhood: async (_, { id }, context) => {
-      if (!context.user) throw new Error("Authentication required");
-
       if (!mongoose.Types.ObjectId.isValid(id)) {
         throw new Error("Invalid neighborhood ID");
       }
 
-      const neighborhood = await Neighborhood.findById(id)
-        .populate("owner", "username profilePhoto")
-        .populate("members.user", "username profilePhoto")
-        .populate("joinRequests.user", "username profilePhoto");
+      const neighborhood = await Neighborhood.findById(id).populate(
+        "owner",
+        "username profilePhoto bio",
+      );
 
       if (!neighborhood) throw new Error("Neighborhood not found");
 
-      const isMember = neighborhood.members.some(
-        (member) => member.user._id.toString() === context.user.userId,
-      );
+      const userId = context.user?.userId;
+      const isMember =
+        userId &&
+        neighborhood.members.some(
+          (member) => member.user.toString() === userId,
+        );
 
-      if (!isMember) throw new Error("Not a member of this neighborhood");
+      const isPubliclyReadable =
+        neighborhood.type === "public" || neighborhood.type === "global";
+
+      if (!isMember && !isPubliclyReadable) {
+        throw new Error("Not a member of this neighborhood");
+      }
+
+      // Only populate members for members — everyone else sees an empty list
+      if (isMember) {
+        await neighborhood.populate(
+          "members.user",
+          "username profilePhoto bio",
+        );
+        await neighborhood.populate(
+          "joinRequests.user",
+          "username profilePhoto",
+        );
+      }
 
       return neighborhood;
     },
-
     // Get neighborhoods the current user belongs to
     myNeighborhoods: async (_, __, context) => {
       if (!context.user) throw new Error("Authentication required");
