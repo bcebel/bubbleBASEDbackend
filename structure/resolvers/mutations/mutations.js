@@ -499,37 +499,23 @@ const resolvers = {
         throw new Error("Invalid neighborhood ID");
       }
 
-      const neighborhood = await Neighborhood.findById(id).populate(
-        "owner",
-        "username profilePhoto bio",
-      );
+      const neighborhood = await Neighborhood.findById(id)
+        .populate("owner", "username profilePhoto bio")
+        .populate("members.user", "username profilePhoto bio")
+        .populate("joinRequests.user", "username profilePhoto");
 
       if (!neighborhood) throw new Error("Neighborhood not found");
 
-      const userId = context.user?.userId;
-      const isMember =
-        userId &&
-        neighborhood.members.some(
-          (member) => member.user.toString() === userId,
-        );
-
-      const isPubliclyReadable =
-        neighborhood.type === "public" || neighborhood.type === "global";
-
-      if (!isMember && !isPubliclyReadable) {
-        throw new Error("Not a member of this neighborhood");
-      }
-
-      // Only populate members for actual members
-      if (isMember) {
-        await neighborhood.populate(
-          "members.user",
-          "username profilePhoto bio",
-        );
-        await neighborhood.populate(
-          "joinRequests.user",
-          "username profilePhoto",
-        );
+      if (neighborhood.type === "personal" || neighborhood.type === "direct") {
+        // Only members can see these
+        const isMember =
+          context.user &&
+          neighborhood.members.some(
+            (m) => m.user._id.toString() === context.user.userId,
+          );
+        if (!isMember) {
+          throw new Error("Not a member of this neighborhood");
+        }
       }
 
       return neighborhood;
