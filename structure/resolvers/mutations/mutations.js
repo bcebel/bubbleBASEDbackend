@@ -520,7 +520,7 @@ const resolvers = {
         throw new Error("Not a member of this neighborhood");
       }
 
-      // Only populate members for members — everyone else sees an empty list
+      // Only populate members for actual members
       if (isMember) {
         await neighborhood.populate(
           "members.user",
