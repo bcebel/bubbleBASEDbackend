@@ -1786,7 +1786,7 @@ const resolvers = {
       }
 
       // Handle different neighborhood types
-      if (neighborhood.type === "public") {
+      if (neighborhood.type === "public" || neighborhood.type === "global") {
         // Auto-join public neighborhoods
         neighborhood.members.push({
           user: context.user.userId,
