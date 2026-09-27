@@ -1675,28 +1675,25 @@ const resolvers = {
 
     // Create a new neighborhood
     createNeighborhood: async (_, { name, description, type }, context) => {
-      // ... (existing createNeighborhood logic)
       if (!context.user) throw new Error("Authentication required");
 
-      // Validate neighborhood type
       const validTypes = ["personal", "private", "public", "global"];
       if (!validTypes.includes(type)) {
-        throw new Error(
-          `Invalid neighborhood type. Must be one of: ${validTypes.join(", ")}`,
-        );
+        throw new Error(`Invalid neighborhood type...`);
       }
+
+      // derive joinPolicy from type for now
+      const joinPolicy =
+        type === "public" || type === "global" ? "anyone" : "invite_only";
 
       const neighborhood = new Neighborhood({
         name,
         description: description || "",
         type,
+        joinPolicy,
         owner: context.user.userId,
         members: [
-          {
-            user: context.user.userId,
-            role: "owner",
-            joinedAt: new Date(),
-          },
+          { user: context.user.userId, role: "owner", joinedAt: new Date() },
         ],
         rules: "",
       });
