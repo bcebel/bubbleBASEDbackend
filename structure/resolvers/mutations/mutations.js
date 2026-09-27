@@ -1488,7 +1488,7 @@ const resolvers = {
 
     updateProfile: async (
       _,
-      { bio, profilePhoto, affiliateLinks },
+      { bio, profilePhoto, affiliateLinks, isPublic },
       context,
     ) => {
       if (!context.user) throw new Error("Authentication required");
@@ -1498,6 +1498,7 @@ const resolvers = {
 
       if (bio !== undefined) updates.bio = bio;
       if (profilePhoto !== undefined) updates.profilePhoto = profilePhoto;
+       if (isPublic !== undefined) updates.isPublic = isPublic;  
 
       // --- Affiliate Link Processing ---
       if (affiliateLinks && affiliateLinks.length > 0) {

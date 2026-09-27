@@ -427,6 +427,7 @@ const typeDefs = gql`
       bio: String
       profilePhoto: String
       affiliateLinks: [AffiliateLinkInput]
+      isPublic: Boolean
     ): User!
 
     # Affiliate mutations
