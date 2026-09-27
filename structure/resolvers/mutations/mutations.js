@@ -355,33 +355,18 @@ const resolvers = {
     },
     // Stream queries
     streams: async (_, { status }, context) => {
-      // calculate the time window regardless of auth
-      const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000);
+      if (!context.user) return []; // or show global only if logged out, your call
 
-      // find global bubbles (visible to everyone, even logged out)
-      const globalBubbleIds = await Neighborhood.find({
-        type: "global",
-        isActive: true,
+      // bubbles the user is a member of — includes global IF they joined it
+      const neighborhoodIds = await Neighborhood.find({
+        "members.user": context.user.userId,
       }).distinct("_id");
 
-      // if logged in, also include the user's bubbles
-      let neighborhoodIds = globalBubbleIds;
-      if (context.user) {
-        const memberships = await Neighborhood.find({
-          "members.user": context.user.userId,
-        }).distinct("_id");
-        // merge: global + membership, deduped
-        neighborhoodIds = [
-          ...new Set([
-            ...globalBubbleIds.map(String),
-            ...memberships.map(String),
-          ]),
-        ];
-      }
+      const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
 
       const filter = {
         neighborhood: { $in: neighborhoodIds },
-        createdAt: { $gte: threeHoursAgo },
+        createdAt: { $gte: sixHoursAgo },
       };
 
       if (status) filter.status = status;
