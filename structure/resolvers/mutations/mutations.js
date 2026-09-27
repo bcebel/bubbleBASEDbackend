@@ -1674,17 +1674,26 @@ const resolvers = {
     },
 
     // Create a new neighborhood
-    createNeighborhood: async (_, { name, description, type }, context) => {
+    createNeighborhood: async (
+      _,
+      { name, description, type, joinPolicy },
+      context,
+    ) => {
       if (!context.user) throw new Error("Authentication required");
 
       const validTypes = ["personal", "private", "public", "global"];
       if (!validTypes.includes(type)) {
-        throw new Error(`Invalid neighborhood type...`);
+        throw new Error(
+          `Invalid type. Must be one of: ${validTypes.join(", ")}`,
+        );
       }
 
-      // derive joinPolicy from type for now
-      const joinPolicy =
-        type === "public" || type === "global" ? "anyone" : "invite_only";
+      const validJoinPolicies = ["invite_only", "request", "open"];
+      if (!validJoinPolicies.includes(joinPolicy)) {
+        throw new Error(
+          `Invalid join policy. Must be one of: ${validJoinPolicies.join(", ")}`,
+        );
+      }
 
       const neighborhood = new Neighborhood({
         name,
@@ -1700,7 +1709,6 @@ const resolvers = {
 
       await neighborhood.save();
 
-      // Return populated neighborhood
       return await Neighborhood.findById(neighborhood._id)
         .populate("owner", "username profilePhoto")
         .populate("members.user", "username profilePhoto");

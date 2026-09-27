@@ -505,6 +505,7 @@ const typeDefs = gql`
       name: String!
       description: String
       type: String
+      joinPolicy: String
     ): Neighborhood
     updateNeighborhood(
       id: ID!
