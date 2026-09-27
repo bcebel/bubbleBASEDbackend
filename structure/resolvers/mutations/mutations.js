@@ -355,23 +355,33 @@ const resolvers = {
     },
     // Stream queries
     streams: async (_, { status }, context) => {
-      if (!context.user) throw new Error("Authentication required");
+      // calculate the time window regardless of auth
+      const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000);
 
-      const userId = context.user.userId;
+      // find global bubbles (visible to everyone, even logged out)
+      const globalBubbleIds = await Neighborhood.find({
+        type: "global",
+        isActive: true,
+      }).distinct("_id");
 
-      // Find neighborhoods the user is a member of
-      const memberships = await Neighborhood.find({
-        "members.user": userId,
-      }).select("_id");
-
-      const neighborhoodIds = memberships.map((n) => n._id);
-
-      // Calculate 24 hours ago from right now
-      const threeHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 125);
+      // if logged in, also include the user's bubbles
+      let neighborhoodIds = globalBubbleIds;
+      if (context.user) {
+        const memberships = await Neighborhood.find({
+          "members.user": context.user.userId,
+        }).distinct("_id");
+        // merge: global + membership, deduped
+        neighborhoodIds = [
+          ...new Set([
+            ...globalBubbleIds.map(String),
+            ...memberships.map(String),
+          ]),
+        ];
+      }
 
       const filter = {
         neighborhood: { $in: neighborhoodIds },
-        createdAt: { $gte: threeHoursAgo }, // Only streams created in the last 3h
+        createdAt: { $gte: threeHoursAgo },
       };
 
       if (status) filter.status = status;
@@ -1498,7 +1508,7 @@ const resolvers = {
 
       if (bio !== undefined) updates.bio = bio;
       if (profilePhoto !== undefined) updates.profilePhoto = profilePhoto;
-       if (isPublic !== undefined) updates.isPublic = isPublic;  
+      if (isPublic !== undefined) updates.isPublic = isPublic;
 
       // --- Affiliate Link Processing ---
       if (affiliateLinks && affiliateLinks.length > 0) {
