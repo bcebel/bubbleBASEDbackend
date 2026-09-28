@@ -84,9 +84,7 @@ app.get("/api/webseed/:cid", async (req, res) => {
   console.log("[webseed]", cid, {
     hasPost: !!post,
     postIsPublic: post?.media.find((m) => m.cid === cid)?.isPublic,
-    hasImage: !!image,
     imageIsPublic: image?.isPublic,
-    hasVideo: !!video,
     videoIsPublic: video?.isPublic,
     final: isPublic,
   });
