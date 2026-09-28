@@ -69,25 +69,25 @@ app.get("/api/webseed/:cid", async (req, res) => {
   if (post) {
     const media = post.media.find((m) => m.cid === cid);
     isPublic = media?.isPublic === true;
+    console.log(isPublic, media);
   } else {
     // 2. Image
     const image = await Image.findOne({ cid }).select("isPublic").lean();
     if (image) {
       isPublic = image.isPublic === true;
+          console.log(isPublic, image);
+
     } else {
       // 3. Video
       const video = await Video.findOne({ cid }).select("isPublic").lean();
       if (video) isPublic = video.isPublic === true;
+          console.log(isPublic, video);
+
     }
   }
 
-  console.log("[webseed]", cid, {
-    hasPost: !!post,
-    postIsPublic: post?.media.find((m) => m.cid === cid)?.isPublic,
-    imageIsPublic: image?.isPublic,
-    videoIsPublic: video?.isPublic,
-    final: isPublic,
-  });
+ 
+
 
   const pinataUrl = `https://fuchsia-solid-parrot-571.mypinata.cloud/ipfs/${cid}?pinataGatewayToken=${process.env.PINATA_TOKEN}`;
 
