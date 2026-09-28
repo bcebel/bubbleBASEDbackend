@@ -387,78 +387,37 @@ app.get("/api/media/private/:cid", authenticateToken, async (req, res) => {
 
 // 3. SMART endpoint - Auto-detects public/private
 app.get("/api/media/:cid", async (req, res) => {
-  try {
-    let user = null;
-    const authHeader = req.headers["authorization"];
+  const media =
+    (await Video.findOne({ cid: req.params.cid })
+      .select("isPublic fileName fileType magnetLink")
+      .lean()) ||
+    (await Image.findOne({ cid: req.params.cid })
+      .select("isPublic fileName fileType magnetLink")
+      .lean());
 
-  if (authHeader && authHeader.startsWith("Bearer ")) {
-    try {
-      const token = authHeader.substring(7); // extract the token from the header
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      user = { userId: decoded.userId };
-    } catch (error) {
-      if (
-        error.name === "JsonWebTokenError" ||
-        error.name === "TokenExpiredError"
-      ) {
-        user = null;
-      } else {
-        console.error("[media] unexpected auth error:", error);
-        throw error;
-      }
-    }
+  if (!media) {
+    return res.status(404).json({ error: "Media not found" });
   }
 
-    let media = await Video.findOne({ cid: req.params.cid }).lean();
-    let mediaType = "video";
-
-    if (!media) {
-      media = await Image.findOne({ cid: req.params.cid }).lean();
-      mediaType = "image";
-    }
-
-    if (!media) {
-      res.set({ "Cache-Control": "public, max-age=3600" });
-      return res.status(404).json({ error: "Media not found" });
-    }
-
-    // SIMPLE BINARY LOGIC
-    if (media.isPublic) {
-      // PUBLIC: Anyone can see, aggressive caching
-      res.set({
-        "Cache-Control": `public, max-age=604800, immutable`,
-        "CDN-Cache-Control": `public, max-age=2592000`,
-        Vary: "Accept-Encoding",
-      });
-    } else {
-      // PRIVATE: Check access
-      const hasAccess = await checkPrivateMediaAccess(media, user);
-
-      if (!hasAccess) {
-        res.set({ "Cache-Control": "no-cache" });
-        return res.status(403).json({ error: "Access denied" });
-      }
-
-      // Private content, user-specific cache
-      res.set({
-        "Cache-Control": `private, max-age=604800, must-revalidate`,
-        "CDN-Cache-Control": `private, max-age=604800`,
-        Vary: "Accept-Encoding, Authorization",
-      });
-    }
-
-    return res.json({
-      fileName: media.fileName,
-      fileType: media.fileType,
-      cid: media.cid,
-      magnetLink: media.magnetLink,
-      isPublic: media.isPublic,
-      mediaType: mediaType,
+  if (media.isPublic === true) {
+    res.set({
+      "Cache-Control": "public, max-age=604800, immutable",
+      "CDN-Cache-Control": "public, max-age=2592000",
     });
-  } catch (error) {
-    console.error("Media API error:", error);
-    res.status(500).json({ error: "Server error" });
+  } else {
+    res.set({
+      "Cache-Control": "private, max-age=604800, must-revalidate",
+    });
   }
+
+  return res.json({
+    fileName: media.fileName,
+    fileType: media.fileType,
+    cid: media.cid,
+    magnetLink: media.magnetLink,
+    isPublic: media.isPublic === true,
+    mediaType: media.fileType,
+  });
 });
 
 // In your backend - cleanup job
