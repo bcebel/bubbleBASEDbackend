@@ -10,6 +10,8 @@ import axios from "axios";
 import FormData from "form-data";
 import Video from "./structure/models/Video.js";
 import Image from "./structure/models/Image.js";
+import User from "./structure/models/User.js";
+import Neighborhood from "./structure/models/Neighborhood.js";
 import { reactiveBooster } from "./seedService.js";
 dotenv.config();
 const SLICE_SIZE = 500 * 1024 * 1024; // 250MB
@@ -201,6 +203,12 @@ export default (app) => {
     const { title, description, neighborhoodId, mediaType } = req.body;
     const uid = req.user?.userId;
 
+    const user = await User.findById(uid).select("isPublic").lean();
+    const bubble = neighborhoodId
+      ? await Neighborhood.findById(neighborhoodId).select("type").lean()
+      : null;
+
+    const isPublic = user?.isPublic === true && bubble?.type === "global";
     // ✅ Get the uploaded file (regardless of field name)
     const file = req.files?.[0] || req.file;
     if (!file) {
@@ -245,7 +253,7 @@ export default (app) => {
           ipfsUrl: ipfsUrl,
           magnetLink: magnetLink,
           neighborhood: neighborhoodId || null,
-          isPublic: true,
+          isPublic: isPublic,
         });
 
         await newImage.save();
@@ -324,6 +332,7 @@ export default (app) => {
             magnetLink: sliceRecords[0].magnetLink,
             neighborhood: neighborhoodId || null,
             isSliced: true,
+            isPublic:   isPublic,
             slices: sliceRecords,
           });
 
@@ -367,6 +376,7 @@ export default (app) => {
             fileType: "video",
             cid: cid,
             ipfsUrl: ipfsUrl,
+            isPublic: isPublic,
             magnetLink: magnetLink,
             neighborhood: neighborhoodId || null,
             isSliced: false,
