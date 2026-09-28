@@ -20,7 +20,6 @@ const announce = [
   "wss://tracker.files.fm:7073/announce",
   "wss://tracker.webtorrent.dev",
   "wss://tracker.openwebtorrent.com",
-  "wss://tracker.btorrent.xyz",
   "wss://tracker.files.fm:7073",
   "udp://tracker.opentrackr.org:1337/announce",
   "udp://open.tracker.cl:1337/announce",

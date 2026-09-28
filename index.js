@@ -40,7 +40,6 @@ const announce = [
   "wss://tracker.files.fm:7073/announce",
   "wss://tracker.webtorrent.dev",
   "wss://tracker.openwebtorrent.com",
-  "wss://tracker.btorrent.xyz",
 ];
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
