@@ -62,32 +62,43 @@ app.get("/api/webseed/:cid", async (req, res) => {
   const { cid } = req.params;
 
   // ─── figure out visibility ────────────────────────────
+  // public requires BOTH: user is public AND bubble is global
+  // everything else is private
   let isPublic = false;
 
   // 1. Post
-  const post = await Post.findOne({ "media.cid": cid }).lean();
+  const post = await Post.findOne({ "media.cid": cid })
+    .populate("author", "isPublic")
+    .populate("neighborhood", "type")
+    .lean();
+
   if (post) {
-    const media = post.media.find((m) => m.cid === cid);
-    isPublic = media?.isPublic === true;
-    console.log(isPublic, media);
+    const authorIsPublic = post.author?.isPublic === true;
+    const bubbleIsGlobal = post.neighborhood?.type === "global";
+    isPublic = authorIsPublic && bubbleIsGlobal;
   } else {
-    // 2. Image
-    const image = await Image.findOne({ cid }).select("isPublic").lean();
+    // 2. Image (old model)
+    const image = await Image.findOne({ cid })
+      .populate("user", "isPublic")
+      .populate("neighborhood", "type")
+      .lean();
     if (image) {
-      isPublic = image.isPublic === true;
-          console.log(isPublic, image);
-
+      const authorIsPublic = image.user?.isPublic === true;
+      const bubbleIsGlobal = image.neighborhood?.type === "global";
+      isPublic = authorIsPublic && bubbleIsGlobal;
     } else {
-      // 3. Video
-      const video = await Video.findOne({ cid }).select("isPublic").lean();
-      if (video) isPublic = video.isPublic === true;
-          console.log(isPublic, video);
-
+      // 3. Video (old model)
+      const video = await Video.findOne({ cid })
+        .populate("user", "isPublic")
+        .populate("neighborhood", "type")
+        .lean();
+      if (video) {
+        const authorIsPublic = video.user?.isPublic === true;
+        const bubbleIsGlobal = video.neighborhood?.type === "global";
+        isPublic = authorIsPublic && bubbleIsGlobal;
+      }
     }
   }
-
- 
-
 
   const pinataUrl = `https://fuchsia-solid-parrot-571.mypinata.cloud/ipfs/${cid}?pinataGatewayToken=${process.env.PINATA_TOKEN}`;
 
