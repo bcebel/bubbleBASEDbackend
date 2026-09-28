@@ -59,9 +59,30 @@ app.options("/api/webseed/:cid", (req, res) => {
 
 app.get("/api/webseed/:cid", async (req, res) => {
   const { cid } = req.params;
+
+  // ─── figure out visibility ────────────────────────────
+  let isPublic = false;
+
+  // 1. Post
+  const post = await Post.findOne({ "media.cid": cid }).lean();
+  if (post) {
+    const media = post.media.find((m) => m.cid === cid);
+    isPublic = media?.isPublic === true;
+  } else {
+    // 2. Image
+    const image = await Image.findOne({ cid }).select("isPublic").lean();
+    if (image) {
+      isPublic = image.isPublic === true;
+    } else {
+      // 3. Video
+      const video = await Video.findOne({ cid }).select("isPublic").lean();
+      if (video) isPublic = video.isPublic === true;
+    }
+  }
+
   const pinataUrl = `https://fuchsia-solid-parrot-571.mypinata.cloud/ipfs/${cid}?pinataGatewayToken=${process.env.PINATA_TOKEN}`;
 
-  // CORS headers
+  // CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Range");
@@ -70,8 +91,13 @@ app.get("/api/webseed/:cid", async (req, res) => {
     "Content-Length, Content-Range, Accept-Ranges, ETag",
   );
 
-  // Cache headers — cid is content-addressed, so this is safe forever
-  res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+  // Cache — depends on visibility
+  if (isPublic) {
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    res.setHeader("CDN-Cache-Control", "public, max-age=31536000");
+  } else {
+    res.setHeader("Cache-Control", "private, max-age=86400, must-revalidate");
+  }
   res.setHeader("ETag", `"${cid}"`);
 
   try {
