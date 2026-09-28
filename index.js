@@ -81,6 +81,16 @@ app.get("/api/webseed/:cid", async (req, res) => {
     }
   }
 
+  console.log("[webseed]", cid, {
+    hasPost: !!post,
+    postIsPublic: post?.media.find((m) => m.cid === cid)?.isPublic,
+    hasImage: !!image,
+    imageIsPublic: image?.isPublic,
+    hasVideo: !!video,
+    videoIsPublic: video?.isPublic,
+    final: isPublic,
+  });
+
   const pinataUrl = `https://fuchsia-solid-parrot-571.mypinata.cloud/ipfs/${cid}?pinataGatewayToken=${process.env.PINATA_TOKEN}`;
 
   // CORS
