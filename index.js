@@ -3,6 +3,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import express from "express";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 import http from "http";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -383,6 +384,7 @@ app.get("/api/media/private/:cid", authenticateToken, async (req, res) => {
   }
 });
 
+
 // 3. SMART endpoint - Auto-detects public/private
 app.get("/api/media/:cid", async (req, res) => {
   try {
@@ -391,11 +393,25 @@ app.get("/api/media/:cid", async (req, res) => {
 
     if (authHeader && authHeader.startsWith("Bearer ")) {
       try {
-        const token = authHeader.substring(7);
+       const token = jwt.sign(
+         { userId: user._id, username: user.username },
+         process.env.JWT_SECRET,
+       );
+
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         user = { userId: decoded.userId };
       } catch (error) {
-        // Invalid token, treat as anonymous
+        if (
+          error.name === "JsonWebTokenError" ||
+          error.name === "TokenExpiredError"
+        ) {
+          // genuinely invalid token — treat as anonymous
+          user = null;
+        } else {
+          // something else broke — surface it
+          console.error("[media] unexpected auth error:", error);
+          throw error;
+        }
       }
     }
 

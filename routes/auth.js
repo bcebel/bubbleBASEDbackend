@@ -38,6 +38,7 @@ router.post("/login", async (req, res) => {
       { id: user._id, username: user.username },
       process.env.JWT_SECRET
     );
+    
     res.json({ token });
   } catch (error) {
     res.status(500).json({ error: error.message });
