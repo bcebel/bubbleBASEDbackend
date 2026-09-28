@@ -22,6 +22,7 @@ import mutationResolvers from "./structure/resolvers/mutations/mutations.js";
 import ogRoutes from "./ogRoutes.js";
 import connectDB from "./config/connection.js";
 import videoUploadHandler from "./videoUploadHandler.js";
+import Post from "./structure/models/Post.js";
 import Video from "./structure/models/Video.js";
 import Image from "./structure/models/Image.js";
 import Neighborhood from "./structure/models/Neighborhood.js";
