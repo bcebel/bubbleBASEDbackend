@@ -391,29 +391,23 @@ app.get("/api/media/:cid", async (req, res) => {
     let user = null;
     const authHeader = req.headers["authorization"];
 
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      try {
-       const token = jwt.sign(
-         { userId: user._id, username: user.username },
-         process.env.JWT_SECRET,
-       );
-
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        user = { userId: decoded.userId };
-      } catch (error) {
-        if (
-          error.name === "JsonWebTokenError" ||
-          error.name === "TokenExpiredError"
-        ) {
-          // genuinely invalid token — treat as anonymous
-          user = null;
-        } else {
-          // something else broke — surface it
-          console.error("[media] unexpected auth error:", error);
-          throw error;
-        }
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    try {
+      const token = authHeader.substring(7); // extract the token from the header
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      user = { userId: decoded.userId };
+    } catch (error) {
+      if (
+        error.name === "JsonWebTokenError" ||
+        error.name === "TokenExpiredError"
+      ) {
+        user = null;
+      } else {
+        console.error("[media] unexpected auth error:", error);
+        throw error;
       }
     }
+  }
 
     let media = await Video.findOne({ cid: req.params.cid }).lean();
     let mediaType = "video";
