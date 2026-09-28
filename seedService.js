@@ -11,23 +11,38 @@ class ReactiveSeedBooster {
       dht: true, // ENABLE DHT for better peer discovery
       lsd: true, // Enable local peer discovery
 
-
       tracker: {
+        rtcConfig: {
+          iceServers: [
+            {
+              urls: "stun:stun.relay.metered.ca:80",
+            },
+            {
+              urls: "turn:standard.relay.metered.ca:80",
+              username: "fe67734f65cabae0c1f0bf61",
+              credential: "AY3FDMwL9QjEIZ2R",
+            },
+            {
+              urls: "turn:standard.relay.metered.ca:80?transport=tcp",
+              username: "fe67734f65cabae0c1f0bf61",
+              credential: "AY3FDMwL9QjEIZ2R",
+            },
+            {
+              urls: "turn:standard.relay.metered.ca:443",
+              username: "fe67734f65cabae0c1f0bf61",
+              credential: "AY3FDMwL9QjEIZ2R",
+            },
+            {
+              urls: "turns:standard.relay.metered.ca:443?transport=tcp",
+              username: "fe67734f65cabae0c1f0bf61",
+              credential: "AY3FDMwL9QjEIZ2R",
+            },
 
-           rtcConfig: {
-                iceServers: [
-                  { urls: "stun:stun.relay.metered.ca:80" },
-                  {
-                    urls: "turn:global.relay.metered.ca:80",
-                    username: "fe67734f65cabae0c1f0bf61",
-                    credential: "AY3FDMwL9QjEIZ2R",
-                  },
-                  { urls: "stun:stun.l.google.com:19302" },
-               { urls: "stun:stun1.l.google.com:19302" },
-                     { urls: "stun:global.stun.twilio.com:3478" }
-                ],
+            { urls: "stun:stun.l.google.com:19302" },
+            { urls: "stun:stun1.l.google.com:19302" },
+            { urls: "stun:global.stun.twilio.com:3478" },
+          ],
         },
-
       },
     });
 
