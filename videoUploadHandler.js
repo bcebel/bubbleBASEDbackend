@@ -233,7 +233,7 @@ export default (app) => {
 
         // Generate magnet link
         // Fix for images
-        const webseed = `https://minnowspacebackend-e6635e46c3d0.herokuapp.com/api/webseed/${cid}`;
+        const webseed = `https://bubblebased.com/api/webseed/${cid}`;
      const magnetLink = await reactiveBooster.boostChunkIfNeeded(
        file.buffer,
        `image-${cid}`,
