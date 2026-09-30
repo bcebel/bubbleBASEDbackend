@@ -13,9 +13,13 @@ import Image from "./structure/models/Image.js";
 import User from "./structure/models/User.js";
 import Neighborhood from "./structure/models/Neighborhood.js";
 import { reactiveBooster } from "./seedService.js";
+
 dotenv.config();
-const SLICE_SIZE = 500 * 1024 * 1024; // 250MB
-const MIN_VIDEO_SIZE_FOR_SLICING = 500 * 1024 * 1024; // 250MB
+
+const SLICE_SIZE = 500 * 1024 * 1024; // 500MB
+const MIN_VIDEO_SIZE_FOR_SLICING = 500 * 1024 * 1024; // 500MB
+
+const UPLOAD_TMP = "/tmp/uploads";
 
 const announce = [
   "wss://tracker-0ad4cca9fd92.herokuapp.com",
@@ -41,11 +45,6 @@ const FILEBASE_SECRET_KEY = process.env.FILEBASE_SECRET_KEY;
 const FILEBASE_BUCKET_NAME = process.env.FILEBASE_BUCKET_NAME;
 const PINATA_JWT = process.env.PINATA_JWT;
 const PINATA_GATEWAY = process.env.PINATA_GATEWAY;
-const PUBLIC_GATEWAYS = [
-  "https://ipfs.io/ipfs/",
-  "https://cloudflare-ipfs.com/ipfs/",
-  "https://gateway.pinata.cloud/ipfs/", // extra Pinata public as backup
-];
 
 const getFileType = (mimetype, originalname) => {
   if (mimetype.startsWith("video/")) return "video";
@@ -77,13 +76,10 @@ const getFileType = (mimetype, originalname) => {
 
 export const authenticateUser = (req, res, next) => {
   const authHeader = req.headers.authorization;
-
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).send("Unauthorized: Missing or invalid token.");
   }
-
   const token = authHeader.split(" ")[1];
-
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
@@ -98,18 +94,13 @@ export const authenticateUser = (req, res, next) => {
 async function uploadToPinata(fileBuffer, fileName, mimeType) {
   try {
     console.log("📤 Uploading to Pinata:", fileName);
-
     const formData = new FormData();
     formData.append("file", fileBuffer, {
       filename: fileName,
       contentType: mimeType,
     });
-
-    const metadata = JSON.stringify({ name: fileName });
-    formData.append("pinataMetadata", metadata);
-
-    const pinataOptions = JSON.stringify({ cidVersion: 0 });
-    formData.append("pinataOptions", pinataOptions);
+    formData.append("pinataMetadata", JSON.stringify({ name: fileName }));
+    formData.append("pinataOptions", JSON.stringify({ cidVersion: 0 }));
 
     const response = await axios.post(
       "https://api.pinata.cloud/pinning/pinFileToIPFS",
@@ -119,18 +110,17 @@ async function uploadToPinata(fileBuffer, fileName, mimeType) {
           ...formData.getHeaders(),
           Authorization: `Bearer ${PINATA_JWT}`,
         },
-      }
+      },
     );
 
     const cid = response.data.IpfsHash;
     const ipfsUrl = `https://${PINATA_GATEWAY}/ipfs/${cid}`;
-
     console.log("✅ Pinata upload successful:", { cid, ipfsUrl });
     return { cid, ipfsUrl };
   } catch (error) {
     console.error(
       "❌ Pinata upload error:",
-      error.response?.data || error.message
+      error.response?.data || error.message,
     );
     throw new Error(`Pinata upload failed: ${error.message}`);
   }
@@ -140,7 +130,6 @@ async function uploadToPinata(fileBuffer, fileName, mimeType) {
 async function uploadToFilebase(fileBuffer, fileName, mimeType) {
   try {
     console.log("📤 Uploading to Filebase:", fileName);
-
     const s3 = new S3Client({
       endpoint: "https://s3.filebase.com",
       region: "us-east-1",
@@ -150,54 +139,48 @@ async function uploadToFilebase(fileBuffer, fileName, mimeType) {
       },
     });
 
-    // Create a unique key with timestamp
     const timestamp = Date.now();
     const key = `${timestamp}_${fileName.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
 
-    const params = {
-      Bucket: FILEBASE_BUCKET_NAME,
-      Key: key,
-      Body: fileBuffer,
-      ContentType: mimeType,
-      Metadata: {
-        originalname: fileName,
-      },
-    };
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: FILEBASE_BUCKET_NAME,
+        Key: key,
+        Body: fileBuffer,
+        ContentType: mimeType,
+        Metadata: { originalname: fileName },
+      }),
+    );
 
-    await s3.send(new PutObjectCommand(params));
-
-    // Filebase automatically pins to IPFS, but we need to get the CID
-    // Note: Filebase doesn't return CID in response headers for S3 uploads
-    // You might need to use their IPFS API to get the CID
-    const cid = key; // This is a placeholder - Filebase S3 doesn't give CID directly
-
-    // Try to get the CID from Filebase IPFS API
-    try {
-      // This is how you'd get the CID from Filebase after S3 upload
-      // You need to list objects and find the CID
-      const ipfsUrl = `https://ipfs.filebase.io/ipfs/${cid}`;
-      console.log("✅ Filebase upload successful (S3 mode)");
-      return { cid, ipfsUrl };
-    } catch (ipfsError) {
-     /* console.log(
-        "⚠️ Could not get CID from Filebase, using S3 key as reference"
-      ); */
-      const ipfsUrl = `https://${FILEBASE_BUCKET_NAME}.s3.filebase.com/${key}`;
-      return { cid: key, ipfsUrl };
-    }
+    const cid = key;
+    const ipfsUrl = `https://${FILEBASE_BUCKET_NAME}.s3.filebase.com/${key}`;
+    return { cid, ipfsUrl };
   } catch (error) {
     console.error("❌ Filebase upload error:", error);
     throw new Error(`Filebase upload failed: ${error.message}`);
   }
 }
 
+// Write a buffer to disk and return the path
+async function writeToDisk(buffer, filename) {
+  if (!fs.existsSync(UPLOAD_TMP)) {
+    fs.mkdirSync(UPLOAD_TMP, { recursive: true });
+  }
+
+  const filePath = path.join(UPLOAD_TMP, filename);
+  const writePath = filePath + ".tmp";
+
+  await fs.promises.writeFile(writePath, buffer);
+  await fs.promises.rename(writePath, filePath);
+
+  return filePath;
+}
 
 export default (app) => {
-  // ✅ Use a dynamic field name based on content type
   const uploadHandler = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 100 * 1024 * 1024 },
-  }).any(); // ← Accept any field name
+  }).any();
 
   async function handleUpload(req, res) {
     const { title, description, neighborhoodId, mediaType } = req.body;
@@ -209,39 +192,38 @@ export default (app) => {
       : null;
 
     const isPublic = user?.isPublic === true && bubble?.type === "global";
-    // ✅ Get the uploaded file (regardless of field name)
+
     const file = req.files?.[0] || req.file;
     if (!file) {
       return res.status(400).send("No file uploaded.");
     }
 
-    // ✅ Determine the actual file type
     const detectedType =
       mediaType || getFileType(file.mimetype, file.originalname);
 
     console.log(`📤 Uploading ${detectedType}:`, file.originalname);
 
     try {
-      // ✅ If it's an image, save to Image model
+      // ────────────────────────────────────────────────
+      // IMAGE
+      // ────────────────────────────────────────────────
       if (detectedType === "image") {
-        // Upload to IPFS
         const { cid, ipfsUrl } = await uploadToPinata(
           file.buffer,
           file.originalname,
           file.mimetype,
         );
 
-        // Generate magnet link
-        // Fix for images
         const webseed = `https://bubblebased.com/api/webseed/${cid}`;
-     const magnetLink = await reactiveBooster.boostChunkIfNeeded(
-       file.buffer,
-       `image-${cid}`,
-       announce,
-       [webseed],
-     );
 
-        // Save to Image model
+        // Images are small — keep passing the buffer
+        const magnetLink = await reactiveBooster.boostChunkIfNeeded(
+          file.buffer,
+          `image-${cid}`,
+          announce,
+          [webseed],
+        );
+
         const newImage = new Image({
           title: title || file.originalname,
           description,
@@ -249,11 +231,11 @@ export default (app) => {
           fileName: file.originalname,
           fileSize: file.size,
           fileType: "image",
-          cid: cid,
-          ipfsUrl: ipfsUrl,
-          magnetLink: magnetLink,
+          cid,
+          ipfsUrl,
+          magnetLink,
           neighborhood: neighborhoodId || null,
-          isPublic: isPublic,
+          isPublic,
         });
 
         await newImage.save();
@@ -267,21 +249,16 @@ export default (app) => {
         });
       }
 
-      // ✅ If it's a video, save to Video model (with slicing)
-      // ✅ If it's a video, save to Video model (with optional slicing)
+      // ────────────────────────────────────────────────
+      // VIDEO
+      // ────────────────────────────────────────────────
       if (detectedType === "video") {
         const fullBuffer = file.buffer;
 
-        // ✅ Check if we should slice or upload whole
+        // --- LARGE VIDEO: SLICE ---
         if (fullBuffer.length > MIN_VIDEO_SIZE_FOR_SLICING) {
-          // --- SLICE LARGE VIDEOS ---
           const totalSlices = Math.ceil(fullBuffer.length / SLICE_SIZE);
           const sliceRecords = [];
-
-        /*  console.log(
-            `🔪 Slicing ${file.originalname} into ${totalSlices} pieces...`,
-          );
-        */
 
           for (let i = 0; i < totalSlices; i++) {
             const start = i * SLICE_SIZE;
@@ -294,32 +271,27 @@ export default (app) => {
               file.mimetype,
             );
 
-            const magnetLink = await new Promise((resolve, reject) => {
-              createTorrent(
-                chunkBuffer,
-                { announce, name: `slice-${i}` },
-                async (err, torrentBuf) => {
-                  if (err) return reject(err);
-                  const mLink = await reactiveBooster.boostChunkIfNeeded(
-                    chunkBuffer,
-                    `gallery-${cid}`,
-                    announce,
-                    [ipfsUrl],
-                  );
-                  resolve(mLink);
-                },
-              );
-            }); 
+            // Write slice to disk, seed from path
+            const slicePath = await writeToDisk(
+              chunkBuffer,
+              `slice-${cid}.mp4`,
+            );
+
+            const magnetLink = await reactiveBooster.boostChunkIfNeeded(
+              slicePath,
+              `gallery-${cid}`,
+              announce,
+              [ipfsUrl],
+            );
 
             sliceRecords.push({
               index: i,
-              cid: cid,
-              magnetLink: magnetLink,
+              cid,
+              magnetLink,
               size: chunkBuffer.length,
             });
           }
 
-          // Save sliced video
           const newVideo = new Video({
             title: title || file.originalname,
             description,
@@ -332,7 +304,7 @@ export default (app) => {
             magnetLink: sliceRecords[0].magnetLink,
             neighborhood: neighborhoodId || null,
             isSliced: true,
-            isPublic:   isPublic,
+            isPublic,
             slices: sliceRecords,
           });
 
@@ -347,56 +319,53 @@ export default (app) => {
             magnetLink: newVideo.magnetLink,
             cid: newVideo.cid,
           });
-        } else {
-          // --- UPLOAD SMALL VIDEOS AS ONE PIECE ---
-      /*    console.log(
-            `📦 Uploading small video as single file: ${file.originalname}`,
-          );
-          */
-
-          const { cid, ipfsUrl } = await uploadToPinata(
-            fullBuffer,
-            file.originalname,
-            file.mimetype,
-          );
-
-     const magnetLink = await reactiveBooster.boostChunkIfNeeded(
-       file.buffer,
-       `video-${cid}`,
-       announce,
-       [ipfsUrl],
-     );
-
-          const newVideo = new Video({
-            title: title || file.originalname,
-            description,
-            user: uid,
-            fileName: file.originalname,
-            fileSize: file.size,
-            fileType: "video",
-            cid: cid,
-            ipfsUrl: ipfsUrl,
-            isPublic: isPublic,
-            magnetLink: magnetLink,
-            neighborhood: neighborhoodId || null,
-            isSliced: false,
-            slices: [],
-          });
-
-          await newVideo.save();
-
-          return res.json({
-            success: true,
-            videoId: newVideo._id,
-            totalSlices: 1,
-            ipfsUrl: ipfsUrl,
-            magnetLink: magnetLink,
-            cid: cid,
-          });
         }
+
+        // --- SMALL VIDEO: SINGLE FILE ---
+        const { cid, ipfsUrl } = await uploadToPinata(
+          fullBuffer,
+          file.originalname,
+          file.mimetype,
+        );
+
+        // Write video to disk, seed from path
+        const videoPath = await writeToDisk(fullBuffer, `video-${cid}.mp4`);
+
+        const magnetLink = await reactiveBooster.boostChunkIfNeeded(
+          videoPath,
+          `video-${cid}`,
+          announce,
+          [ipfsUrl],
+        );
+
+        const newVideo = new Video({
+          title: title || file.originalname,
+          description,
+          user: uid,
+          fileName: file.originalname,
+          fileSize: file.size,
+          fileType: "video",
+          cid,
+          ipfsUrl,
+          isPublic,
+          magnetLink,
+          neighborhood: neighborhoodId || null,
+          isSliced: false,
+          slices: [],
+        });
+
+        await newVideo.save();
+
+        return res.json({
+          success: true,
+          videoId: newVideo._id,
+          totalSlices: 1,
+          ipfsUrl,
+          magnetLink,
+          cid,
+        });
       }
 
-      // ✅ Fallback for other file types
       return res.status(400).send("Unsupported file type");
     } catch (error) {
       console.error("❌ Upload failed:", error);
