@@ -1254,6 +1254,10 @@ const resolvers = {
         if (!isMember) throw new Error("Not a member of this neighborhood");
       }
 
+      const mediaUrl = imageUrl || videoUrl;
+      const resolvedCid =
+        ipfsHash || (mediaUrl ? mediaUrl.match(/\/ipfs\/([^?]+)/)?.[1] : null);
+      
       // 2. Create message document
       const message = new Message({
         sender: userId,
@@ -1267,7 +1271,7 @@ const resolvers = {
         fileSize: fileSize || null,
         magnetLink: magnetLink || null,
         mimeType: mimeType,
-        ipfsHash: ipfsHash || null,
+        ipfsHash: resolvedCid,
         rotation: rotation || null,
         ipfsData: ipfsData || null,
         neighborhood: neighborhoodId || null,
@@ -1281,35 +1285,39 @@ const resolvers = {
       console.log("Backend: Message saved with ID:", message._id);
 
       // ✅ NEW: If this message has media, also create a Post
-      if (
-        neighborhoodId &&
-        !sessionId && // 👈 livestream exclusion
-        (imageUrl || videoUrl || magnetLink) &&
-        fileType !== "video_chunk" &&
-        fileType !== "video_header"
-      ) {
-        try {
-          await Post.create({
-            content: content || `Shared: ${fileName || "media"}`,
-            author: userId,
-            feedType: "neighborhood",
-            neighborhood: neighborhoodId,
-            media: [
-              {
-                url: imageUrl || videoUrl,
-                cid: ipfsHash,
-                magnetURI: magnetLink,
-                mediaType: fileType === "video" ? "video" : "image",
-                fileName: fileName,
-              },
-            ],
-            createdAt: new Date(),
-          });
-          console.log("✅ Created Post from chat media");
-        } catch (postErr) {
-          console.error("❌ Failed to create Post from chat media:", postErr);
-        }
-      }
+if (
+  neighborhoodId &&
+  !sessionId &&
+  (imageUrl || videoUrl || magnetLink) &&
+  fileType !== "video_chunk" &&
+  fileType !== "video_header"
+) {
+  try {
+    const mediaUrl = imageUrl || videoUrl;
+    const extractedCid =
+      ipfsHash || (mediaUrl ? mediaUrl.match(/\/ipfs\/([^?]+)/)?.[1] : null);
+
+    await Post.create({
+      content: content || `Shared: ${fileName || "media"}`,
+      author: userId,
+      feedType: "neighborhood",
+      neighborhood: neighborhoodId,
+      media: [
+        {
+          url: mediaUrl,
+          cid: extractedCid,
+          magnetURI: magnetLink,
+          mediaType: fileType === "video" ? "video" : "image",
+          fileName: fileName,
+        },
+      ],
+      createdAt: new Date(),
+    });
+    console.log("✅ Created Post from chat media, cid:", extractedCid);
+  } catch (postErr) {
+    console.error("❌ Failed to create Post from chat media:", postErr);
+  }
+}
 
       // 3. Sync video chunk to StreamChunk model if streaming
       if (
