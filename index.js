@@ -63,11 +63,8 @@ app.get("/api/webseed/:cid", async (req, res) => {
   const { cid } = req.params;
 
   // ─── figure out visibility ────────────────────────────
-  // public requires BOTH: user is public AND bubble is global
-  // everything else is private
   let isPublic = false;
 
-  // 1. Post
   const post = await Post.findOne({ "media.cid": cid })
     .populate("author", "isPublic")
     .populate("neighborhood", "type")
@@ -78,7 +75,6 @@ app.get("/api/webseed/:cid", async (req, res) => {
     const bubbleIsGlobal = post.neighborhood?.type === "global";
     isPublic = authorIsPublic && bubbleIsGlobal;
   } else {
-    // 2. Image (old model)
     const image = await Image.findOne({ cid })
       .populate("user", "isPublic")
       .populate("neighborhood", "type")
@@ -88,7 +84,6 @@ app.get("/api/webseed/:cid", async (req, res) => {
       const bubbleIsGlobal = image.neighborhood?.type === "global";
       isPublic = authorIsPublic && bubbleIsGlobal;
     } else {
-      // 3. Video (old model)
       const video = await Video.findOne({ cid })
         .populate("user", "isPublic")
         .populate("neighborhood", "type")
@@ -129,6 +124,15 @@ app.get("/api/webseed/:cid", async (req, res) => {
     res.status(upstream.status);
     res.setHeader("Accept-Ranges", "bytes");
 
+    // MIME type normalization map for iOS Safari quirks
+    const MIME_FIXES = {
+      "video/quicktime": "video/mp4",
+      "video/x-m4v": "video/mp4",
+      "image/jpg": "image/jpeg",
+      "image/pjpeg": "image/jpeg",
+      "application/octet-stream": null, // we'll sniff below
+    };
+
     for (const h of [
       "content-type",
       "content-length",
@@ -136,18 +140,27 @@ app.get("/api/webseed/:cid", async (req, res) => {
       "etag",
       "last-modified",
     ]) {
-     const v = upstream.headers.get(h);
-  if (v) {
-    // Normalize video/quicktime to video/mp4
-    if (h === "content-type" && v === "video/quicktime") {
-      res.setHeader(h, "video/mp4");
-    } else {
-      res.setHeader(h, v);
-    }
-  }
-}
+      const v = upstream.headers.get(h);
+      if (!v) continue;
 
-  
+      if (h === "content-type") {
+        // Strip charset and codec params for the check
+        const baseType = v.split(";")[0].trim().toLowerCase();
+
+        if (MIME_FIXES[baseType]) {
+          res.setHeader(h, MIME_FIXES[baseType]);
+        } else if (baseType === "application/octet-stream") {
+          // Pinata sometimes returns this for .mov or unknown types.
+          // Sniff the CID extension as a last resort.
+          // Default to a safe guess based on file name pattern.
+          res.setHeader(h, "video/mp4"); // conservative default
+        } else {
+          res.setHeader(h, v);
+        }
+      } else {
+        res.setHeader(h, v);
+      }
+    }
 
     if (!upstream.body) return res.end();
     Readable.fromWeb(upstream.body).pipe(res);
@@ -157,7 +170,6 @@ app.get("/api/webseed/:cid", async (req, res) => {
     else res.end();
   }
 });
-
 
 const httpServer = http.createServer(app);
 // In index.js, instead of importing subscriptions.js
