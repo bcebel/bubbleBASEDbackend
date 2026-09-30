@@ -94,10 +94,18 @@ export const authenticateUser = (req, res, next) => {
 async function uploadToPinata(fileBuffer, fileName, mimeType) {
   try {
     console.log("📤 Uploading to Pinata:", fileName);
+
+     let normalizedMime = mimeType;
+     if (mimeType === "video/quicktime") {
+       normalizedMime = "video/mp4";
+     } else if (mimeType === "video/x-m4v") {
+       normalizedMime = "video/mp4";
+     }
+    
     const formData = new FormData();
     formData.append("file", fileBuffer, {
       filename: fileName,
-      contentType: mimeType,
+      contentType: normalizedMime,
     });
     formData.append("pinataMetadata", JSON.stringify({ name: fileName }));
     formData.append("pinataOptions", JSON.stringify({ cidVersion: 0 }));

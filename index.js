@@ -136,9 +136,18 @@ app.get("/api/webseed/:cid", async (req, res) => {
       "etag",
       "last-modified",
     ]) {
-      const v = upstream.headers.get(h);
-      if (v) res.setHeader(h, v);
+     const v = upstream.headers.get(h);
+  if (v) {
+    // Normalize video/quicktime to video/mp4
+    if (h === "content-type" && v === "video/quicktime") {
+      res.setHeader(h, "video/mp4");
+    } else {
+      res.setHeader(h, v);
     }
+  }
+}
+
+  
 
     if (!upstream.body) return res.end();
     Readable.fromWeb(upstream.body).pipe(res);
