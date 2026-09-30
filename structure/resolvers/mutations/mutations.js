@@ -1045,18 +1045,15 @@ const resolvers = {
     },
 
     // In your createPost resolver
-    // CREATE_POST mutation resolver
     createPost: async (_, { input }, context) => {
       if (!context.user) throw new Error("Authentication required");
 
       const userId = context.user.userId || context.user.id;
 
-      // ✅ Require neighborhoodId
       if (!input.neighborhoodId) {
         throw new Error("neighborhoodId is required");
       }
 
-      // Validate neighborhood access
       if (!mongoose.Types.ObjectId.isValid(input.neighborhoodId)) {
         throw new Error("Invalid neighborhood ID provided");
       }
@@ -1074,14 +1071,29 @@ const resolvers = {
       if (!isMember) {
         throw new Error("Not a member of this neighborhood");
       }
-      // Create the post - ALWAYS neighborhood!
+
+      // Copy magnets from Video/Image docs into the post's media array
+      const mediaWithMagnets = await Promise.all(
+        (input.media || []).map(async (m) => {
+          if (m.magnetURI || !m.cid) return m;
+
+          const [video, image] = await Promise.all([
+            Video.findOne({ cid: m.cid }).select("magnetLink").lean(),
+            Image.findOne({ cid: m.cid }).select("magnetLink").lean(),
+          ]);
+
+          const magnet = video?.magnetLink || image?.magnetLink || null;
+          return magnet ? { ...m, magnetURI: magnet } : m;
+        }),
+      );
+
       const post = new Post({
         content: input.content,
         author: userId,
-        feedType: "neighborhood", // ← Always neighborhood
+        feedType: "neighborhood",
         neighborhood: input.neighborhoodId,
         group: input.groupId || null,
-        media: input.media || [],
+        media: mediaWithMagnets,
         affiliate: input.affiliate || null,
         isPinned: input.isPinned || false,
       });

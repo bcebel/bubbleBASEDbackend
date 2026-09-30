@@ -769,42 +769,6 @@ const seedUpload = multer({
 });
 
 // ✅ UPDATE the route with multer middleware
-// In your backend - NO FILE UPLOAD, just register the magnet link
-app.post("/api/seed-register", authenticateToken, async (req, res) => {
-  const { magnetLink, cid, fileName, mediaType, neighborhoodId } = req.body;
-  if (!cid) return res.status(400).json({ error: "cid required" });
-
-  try {
-    const gateway = `https://fuchsia-solid-parrot-571.mypinata.cloud/ipfs/${cid}?pinataGatewayToken=${process.env.PINATA_TOKEN}`;
-    const upstream = await fetch(gateway);
-    if (!upstream.ok) throw new Error(`gateway ${upstream.status}`);
-    const buffer = Buffer.from(await upstream.arrayBuffer());
-
-    // Hand to the same booster the livestream uses
-    const backendMagnet = await reactiveBooster.boostChunkIfNeeded(
-      buffer,
-      `${mediaType || "post"}-${cid}`,
-      announce,
-      [gateway],
-    );
-
-    // Save the BACKEND magnet to the Post so gallery sees it
-    // (client magnet is ephemeral — dies when the tab closes)
-    const result = await Post.updateOne(
-      { "media.cid": cid },
-      { $set: { "media.$.magnetURI": backendMagnet } },
-    );
-
-    res.json({
-      success: true,
-      magnetLink: backendMagnet,
-      updated: result.modifiedCount,
-    });
-  } catch (err) {
-    console.error("[seed-register]", err);
-    res.status(500).json({ error: err.message });
-  }
-});
 
 // Simply upload endpoint for testing
 app.post(
