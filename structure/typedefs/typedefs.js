@@ -24,7 +24,7 @@ const typeDefs = gql`
     id: ID!
     title: String!
     description: String
-    user: User!
+    user: User
     neighborhood: Neighborhood
     fileName: String!
     fileSize: Int!
@@ -54,7 +54,7 @@ const typeDefs = gql`
     description: String
     type: String!
     bubblePhotoCid: String
-    owner: User!
+    owner: User
     members: [NeighborhoodMember]
     joinRequests: [JoinRequest]
     rules: String
@@ -238,7 +238,7 @@ const typeDefs = gql`
     cid: String!
     ipfsUrl: String!
     magnetLink: String!
-    user: User!
+    user: User
     strategy: String
     neighborhood: Neighborhood
     isPublic: Boolean!
@@ -280,7 +280,7 @@ const typeDefs = gql`
   type Ad {
     id: ID!
     affiliateLink: String!
-    user: User!
+    user: User
     clicks: Int!
     createdAt: String!
   }
