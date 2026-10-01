@@ -66,9 +66,9 @@ const typeDefs = gql`
   }
 
   type NeighborhoodMember {
-    user: User!
-    role: String!
-    joinedAt: String!
+    user: User
+    role: String
+    joinedAt: String
   }
 
   type JoinRequest {
