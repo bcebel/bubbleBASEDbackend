@@ -238,7 +238,7 @@ const corsOptions = {
     "Content-Length",
     "Content-Range",
     "X-Powered-By",
-    "Accept-Ranges"
+    "Accept-Ranges",
   ],
   maxAge: 86400,
 };
@@ -302,9 +302,6 @@ async function checkPrivateMediaAccess(media, user) {
 
   return false;
 }
-
-
-
 
 // ========== REST API ROUTES FROM OLDEST VERSION ==========
 app.get("/api/health", (req, res) => {
@@ -405,7 +402,6 @@ app.get("/api/media/private/:cid", authenticateToken, async (req, res) => {
   }
 });
 
-
 // 3. SMART endpoint - Auto-detects public/private
 app.get("/api/media/:cid", async (req, res) => {
   const media =
@@ -468,8 +464,6 @@ app.post(
 
   liveChunkUpload.single("chunk"),
   async (req, res) => {
-
-
     try {
       // 1. DATA EXTRACTION - Use let/const consistently
       const { sessionId, chunkIndex, rotation } = req.body;
@@ -515,7 +509,6 @@ app.post(
         `💾 Chunk exists after write: ${fs.existsSync(tempFilePath)}`,
       );
 
-
       const magnetUri = await reactiveBooster.boostChunkIfNeeded(
         tempFilePath,
         `${sessionId}-${indexInt}`,
@@ -535,7 +528,6 @@ app.post(
         !parentStream &&
         retries < (isHeader ? maxRetriesForHeader : maxRetries)
       ) {
-
         await new Promise((resolve) => setTimeout(resolve, 200));
         parentStream = await Stream.findOne({ sessionId });
         retries++;
@@ -674,7 +666,7 @@ app.get("/api/live-chunk/:sessionId/:index", async (req, res) => {
   const sessionId = req.params.sessionId.replace(/[^a-zA-Z0-9_-]/g, "");
   const index = req.params.index.replace(/[^a-zA-Z0-9_-]/g, "");
   console.log(`🔍 Looking for chunk: ${sessionId}/${index}`);
-  
+
   const { hash } = req.query;
 
   const tempDir = path.join("/tmp", "live-chunks", sessionId);
@@ -749,7 +741,6 @@ app.get("/api/live-chunk/:sessionId/:index", async (req, res) => {
   return res.status(404).send("Chunk not ready yet");
 }); // ✅ Just ONE closing bracket
 
-
 app.get("/api/stream-rotation/:sessionId", async (req, res) => {
   const { sessionId } = req.params;
 
@@ -763,7 +754,6 @@ app.get("/api/stream-rotation/:sessionId", async (req, res) => {
     res.json({ rotation: 0 });
   }
 });
-
 
 app.post("/api/stream-end", authenticateToken, async (req, res) => {
   const { sessionId } = req.body;
@@ -797,7 +787,7 @@ const seedUpload = multer({
 
 // Simply upload endpoint for testing
 app.post(
-  "/api/upload-image",
+  "/upload-image",
   authenticateToken,
   upload.single("file"),
   async (req, res) => {

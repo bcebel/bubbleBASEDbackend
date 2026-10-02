@@ -60,7 +60,7 @@ const typeDefs = gql`
     rules: String
     createdAt: String!
     updatedAt: String!
-    memberCount: Int!
+    memberCount: Int
     joinPolicy: String
     inviteLinks: [InviteLink!]!
   }
@@ -220,7 +220,7 @@ const typeDefs = gql`
     id: ID!
     name: String!
     description: String!
-    members: [User!]!
+    members: [User!]
     posts: [Post!]!
     createdAt: String!
     updatedAt: String!
