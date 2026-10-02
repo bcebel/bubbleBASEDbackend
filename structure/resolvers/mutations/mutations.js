@@ -110,7 +110,7 @@ const resolvers = {
         requestedAt: request.requestedAt,
       };
     },
-    
+
     neighborhoodPendingRequests: async (_, { neighborhoodId }, context) => {
       if (!context.user) throw new Error("Authentication required");
 
@@ -1872,37 +1872,47 @@ const resolvers = {
         throw new Error("Neighborhood not found");
       }
 
-      // Check if user is already a member
+      // Already a member?
       const isAlreadyMember = neighborhood.members.some(
         (member) => member.user.toString() === context.user.userId,
       );
-
       if (isAlreadyMember) {
         throw new Error("You are already a member of this neighborhood");
       }
 
-      // Handle different neighborhood types
-      if (neighborhood.type === "public" || neighborhood.type === "global") {
-        // Auto-join public neighborhoods
-        neighborhood.members.push({
-          user: context.user.userId,
-          role: "member",
-          joinedAt: new Date(),
-        });
-      } else if (neighborhood.type === "private") {
-        // Add to join requests for private neighborhoods
-        const alreadyRequested = neighborhood.joinRequests.some(
-          (request) => request.user.toString() === context.user.userId,
-        );
+      // Use joinPolicy as the source of truth
+      switch (neighborhood.joinPolicy) {
+        case "open":
+          // Auto-join
+          neighborhood.members.push({
+            user: context.user.userId,
+            role: "member",
+            joinedAt: new Date(),
+          });
+          break;
 
-        if (!alreadyRequested) {
+        case "request": {
+          // Check for existing pending request
+          const alreadyRequested = neighborhood.joinRequests.some(
+            (r) =>
+              r.user.toString() === context.user.userId &&
+              r.status === "pending",
+          );
+          if (alreadyRequested) {
+            throw new Error("You already have a pending request");
+          }
+
           neighborhood.joinRequests.push({
             user: context.user.userId,
             status: "pending",
+            requestedAt: new Date(),
           });
+          break;
         }
-      } else if (neighborhood.type === "personal") {
-        throw new Error("Cannot join personal neighborhoods");
+
+        case "invite_only":
+        default:
+          throw new Error("This bubble requires an invite link to join");
       }
 
       await neighborhood.save();
