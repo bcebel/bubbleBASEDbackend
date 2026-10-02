@@ -286,6 +286,9 @@ const typeDefs = gql`
   }
 
   type Query {
+    neighborhoodPendingRequests(neighborhoodId: ID!): [PendingJoinRequest!]!
+    myJoinRequest(neighborhoodId: ID!): MyJoinRequest
+
     myPosts: [Post!]
     myNeighborhoodsPosts: [Post!]
     neighborhoodPosts(neighborhoodId: ID!): [Post!]
@@ -372,6 +375,7 @@ const typeDefs = gql`
   }
 
   type Mutation {
+    rejectJoinRequest(neighborhoodId: ID!, userId: ID!): Boolean!
     updateVisibility(isPublic: Boolean!): User!
     updateBubblePhoto(neighborhoodId: ID!, cid: String!): Neighborhood
     createDirectMessageBubble(userId: ID!): Neighborhood
@@ -520,7 +524,6 @@ const typeDefs = gql`
 
     # For neighborhood owners/moderators
     approveJoinRequest(neighborhoodId: ID!, userId: ID!): Neighborhood
-    rejectJoinRequest(neighborhoodId: ID!, userId: ID!): Neighborhood
     removeMember(neighborhoodId: ID!, userId: ID!): Neighborhood
 
     # Invite system (optional for later)
@@ -590,6 +593,19 @@ const typeDefs = gql`
     link: InviteLink
     neighborhood: Neighborhood
   }
+
+  type PendingJoinRequest {
+    id: ID!
+    user: User!
+    requestedAt: String!
+    status: String!
+  }
+
+  type MyJoinRequest {
+    status: String!
+    requestedAt: String!
+  }
+
 `;
 
 export default typeDefs;

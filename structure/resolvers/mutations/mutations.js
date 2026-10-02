@@ -92,6 +92,53 @@ const validateAndExtractAffiliateHtml = (html) => {
 
 const resolvers = {
   Query: {
+    myJoinRequest: async (_, { neighborhoodId }, context) => {
+      if (!context.user) return null;
+
+      const neighborhood = await Neighborhood.findById(neighborhoodId);
+      if (!neighborhood) return null;
+
+      const request = neighborhood.joinRequests.find(
+        (r) =>
+          r.user.toString() === context.user.userId && r.status === "pending",
+      );
+
+      if (!request) return null;
+
+      return {
+        status: request.status,
+        requestedAt: request.requestedAt,
+      };
+    },
+    
+    neighborhoodPendingRequests: async (_, { neighborhoodId }, context) => {
+      if (!context.user) throw new Error("Authentication required");
+
+      const neighborhood = await Neighborhood.findById(neighborhoodId).populate(
+        "joinRequests.user",
+        "id username profilePhoto",
+      );
+
+      if (!neighborhood) throw new Error("Neighborhood not found");
+
+      const userRole = neighborhood.members.find(
+        (member) => member.user.toString() === context.user.userId,
+      )?.role;
+
+      if (!userRole || !["owner", "moderator"].includes(userRole)) {
+        throw new Error("Only owners and moderators can view pending requests");
+      }
+
+      return neighborhood.joinRequests
+        .filter((r) => r.status === "pending")
+        .map((r) => ({
+          id: r._id.toString(),
+          user: r.user,
+          requestedAt: r.requestedAt,
+          status: r.status,
+        }));
+    },
+
     myPosts: async (_, __, context) => {
       if (!context.user) return [];
       return await Post.find({ author: context.user.userId })
@@ -935,6 +982,33 @@ const resolvers = {
   },
 
   Mutation: {
+    rejectJoinRequest: async (_, { neighborhoodId, userId }, context) => {
+      if (!context.user) throw new Error("Authentication required");
+
+      const neighborhood = await Neighborhood.findById(neighborhoodId);
+      if (!neighborhood) throw new Error("Neighborhood not found");
+
+      const userRole = neighborhood.members.find(
+        (member) => member.user.toString() === context.user.userId,
+      )?.role;
+
+      if (!userRole || !["owner", "moderator"].includes(userRole)) {
+        throw new Error("Only owners and moderators can reject join requests");
+      }
+
+      const joinRequest = neighborhood.joinRequests.find(
+        (request) =>
+          request.user.toString() === userId && request.status === "pending",
+      );
+
+      if (!joinRequest) throw new Error("Join request not found");
+
+      joinRequest.status = "rejected";
+      await neighborhood.save();
+
+      return true;
+    },
+
     updateVisibility: async (_, { isPublic }, context) => {
       if (!context.user) throw new Error("Authentication required");
       return await User.findByIdAndUpdate(
@@ -1257,7 +1331,7 @@ const resolvers = {
       const mediaUrl = imageUrl || videoUrl;
       const resolvedCid =
         ipfsHash || (mediaUrl ? mediaUrl.match(/\/ipfs\/([^?]+)/)?.[1] : null);
-      
+
       // 2. Create message document
       const message = new Message({
         sender: userId,
@@ -1285,39 +1359,40 @@ const resolvers = {
       console.log("Backend: Message saved with ID:", message._id);
 
       // ✅ NEW: If this message has media, also create a Post
-if (
-  neighborhoodId &&
-  !sessionId &&
-  (imageUrl || videoUrl || magnetLink) &&
-  fileType !== "video_chunk" &&
-  fileType !== "video_header"
-) {
-  try {
-    const mediaUrl = imageUrl || videoUrl;
-    const extractedCid =
-      ipfsHash || (mediaUrl ? mediaUrl.match(/\/ipfs\/([^?]+)/)?.[1] : null);
+      if (
+        neighborhoodId &&
+        !sessionId &&
+        (imageUrl || videoUrl || magnetLink) &&
+        fileType !== "video_chunk" &&
+        fileType !== "video_header"
+      ) {
+        try {
+          const mediaUrl = imageUrl || videoUrl;
+          const extractedCid =
+            ipfsHash ||
+            (mediaUrl ? mediaUrl.match(/\/ipfs\/([^?]+)/)?.[1] : null);
 
-    await Post.create({
-      content: content || `Shared: ${fileName || "media"}`,
-      author: userId,
-      feedType: "neighborhood",
-      neighborhood: neighborhoodId,
-      media: [
-        {
-          url: mediaUrl,
-          cid: extractedCid,
-          magnetURI: magnetLink,
-          mediaType: fileType === "video" ? "video" : "image",
-          fileName: fileName,
-        },
-      ],
-      createdAt: new Date(),
-    });
-    console.log("✅ Created Post from chat media, cid:", extractedCid);
-  } catch (postErr) {
-    console.error("❌ Failed to create Post from chat media:", postErr);
-  }
-}
+          await Post.create({
+            content: content || `Shared: ${fileName || "media"}`,
+            author: userId,
+            feedType: "neighborhood",
+            neighborhood: neighborhoodId,
+            media: [
+              {
+                url: mediaUrl,
+                cid: extractedCid,
+                magnetURI: magnetLink,
+                mediaType: fileType === "video" ? "video" : "image",
+                fileName: fileName,
+              },
+            ],
+            createdAt: new Date(),
+          });
+          console.log("✅ Created Post from chat media, cid:", extractedCid);
+        } catch (postErr) {
+          console.error("❌ Failed to create Post from chat media:", postErr);
+        }
+      }
 
       // 3. Sync video chunk to StreamChunk model if streaming
       if (
