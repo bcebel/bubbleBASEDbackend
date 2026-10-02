@@ -465,6 +465,7 @@ const liveChunkUpload = multer({ storage: multer.memoryStorage() });
 app.post(
   "/api/live-chunk",
   authenticateToken,
+
   liveChunkUpload.single("chunk"),
   async (req, res) => {
 
@@ -508,6 +509,11 @@ app.post(
       const writePath = tempFilePath + ".tmp";
       await fs.promises.writeFile(writePath, file.buffer);
       await fs.promises.rename(writePath, tempFilePath);
+
+      console.log(`💾 Writing chunk to: ${tempFilePath}`);
+      console.log(
+        `💾 Chunk exists after write: ${fs.existsSync(tempFilePath)}`,
+      );
 
 
       const magnetUri = await reactiveBooster.boostChunkIfNeeded(
