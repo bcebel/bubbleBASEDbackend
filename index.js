@@ -34,6 +34,7 @@ import fs from "fs";
 import StreamChunk from "./structure/models/StreamChunk.js";
 import Stream from "./structure/models/Stream.js";
 import { Readable } from "node:stream";
+import { cleanupOldStreams } from "./cleanupStreams.js";
 
 dotenv.config();
 // At the top of your backend file, after the imports
@@ -1295,6 +1296,8 @@ chatIo.on("connection", (socket) => {
 // ========== ADD VIDEO UPLOAD HANDLER ==========
 videoUploadHandler(app);
 
+setInterval(cleanupOldStreams, 30 * 60 * 1000);
+cleanupOldStreams();
 // ========== AUTH ROUTES ==========
 import authRoutes from "./routes/auth.js";
 app.use("/api", authRoutes);
