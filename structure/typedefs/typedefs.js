@@ -258,6 +258,7 @@ const typeDefs = gql`
     header: StreamChunk
     status: String!
     rotation: Int
+    viewerCanDelete: Boolean
     createdAt: String!
     updatedAt: String!
   }

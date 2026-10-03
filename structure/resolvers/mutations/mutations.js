@@ -2490,17 +2490,14 @@ const resolvers = {
   // In your GraphQL Resolvers file
   // Backend: resolvers.js
   Stream: {
-    // This function will fix the "header: null" issue by hunting the Message collection
     header: async (parent) => {
       const Message = mongoose.model("Message");
-      // Look for the message with the same sessionId that acts as the header
       return await Message.findOne({
         sessionId: parent.sessionId,
-        content: "STREAM_HEADER", // or check for the one that has the thumbnail
+        content: "STREAM_HEADER",
       }).lean();
     },
 
-    // This gives you a direct shortcut to the thumbnail
     thumbnailUrl: async (parent) => {
       const Message = mongoose.model("Message");
       const msg = await Message.findOne({
@@ -2511,6 +2508,34 @@ const resolvers = {
         .lean();
 
       return msg?.thumbnailUrl || null;
+    },
+
+    viewerCanDelete: async (parent, _, context) => {
+      if (!context.user) return false;
+
+      const userId = context.user.userId;
+
+      // Host can always delete
+      if (parent.startedBy?.toString() === userId) return true;
+
+      // Otherwise, check if user is owner or moderator of any target bubble
+      const targets = parent.neighborhoods?.length
+        ? parent.neighborhoods
+        : [parent.neighborhood];
+
+      if (!targets.length || !targets[0]) return false;
+
+      const bubble = await mongoose.model("Neighborhood").findOne({
+        _id: { $in: targets },
+        members: {
+          $elemMatch: {
+            user: userId,
+            role: { $in: ["owner", "moderator"] },
+          },
+        },
+      });
+
+      return !!bubble;
     },
   },
 };
