@@ -4,7 +4,7 @@ import StreamChunk from "./structure/models/StreamChunk.js";
 import Message from "./structure/models/Message.js";
 import { reactiveBooster } from "./seedService.js";
 
-const MAX_AGE_MS = 7 * 60 * 60 * 1000; // 7 hours
+const MAX_AGE_MS = 6 * 60 * 60 * 1000; // 7 hours
 
 export async function cleanupOldStreams() {
   const cutoff = new Date(Date.now() - MAX_AGE_MS);
