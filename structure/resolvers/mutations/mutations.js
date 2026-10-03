@@ -2211,7 +2211,7 @@ const resolvers = {
       const link = neighborhood.inviteLinks.id(linkId);
       if (!link) throw new Error("Invite link not found");
 
-      link.remove();
+      neighborhood.inviteLinks.pull({ _id: linkId });
       await neighborhood.save();
 
       return true;
