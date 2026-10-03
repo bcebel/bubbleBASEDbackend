@@ -34,11 +34,12 @@ const NeighborhoodSchema = new Schema(
       ref: "User",
       required: true,
     },
-     visibility: {
-  type: String,
-  enum: ["private", "global", "public"],  // or similar
-  default: "private",
-} ,
+    isDefault: { type: Boolean, default: false },
+    visibility: {
+      type: String,
+      enum: ["private", "global", "public"], // or similar
+      default: "private",
+    },
 
     members: [
       {
@@ -132,10 +133,10 @@ const NeighborhoodSchema = new Schema(
     ],
 
     joinPolicy: {
-  type: String,
-  enum: ["invite_only", "request", "open"],
-  default: "invite_only",
-},
+      type: String,
+      enum: ["invite_only", "request", "open"],
+      default: "invite_only",
+    },
     // Invite settings
     allowMemberInvites: {
       type: Boolean,

@@ -1790,6 +1790,24 @@ const resolvers = {
       });
       await personalNeighborhood.save();
 
+      const defaultBubble = new Neighborhood({
+        name: `${user.username}'s bubble`,
+        description: "",
+        type: "private",
+        joinPolicy: "invite_only",
+        owner: user._id,
+        members: [
+          {
+            user: user._id,
+            role: "owner",
+            joinedAt: new Date(),
+          },
+        ],
+        rules: "",
+        isDefault: true,
+      });
+      await defaultBubble.save();
+
       const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
         // Ensure JWT payload uses 'userId'
         expiresIn: "24h",

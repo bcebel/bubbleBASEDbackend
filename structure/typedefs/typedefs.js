@@ -63,6 +63,7 @@ const typeDefs = gql`
     memberCount: Int
     joinPolicy: String
     inviteLinks: [InviteLink!]!
+    isDefault: Boolean
   }
 
   type NeighborhoodMember {
