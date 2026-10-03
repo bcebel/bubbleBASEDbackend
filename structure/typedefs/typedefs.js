@@ -375,6 +375,7 @@ const typeDefs = gql`
   }
 
   type Mutation {
+    deleteStream(streamId: ID!): Boolean!
     rejectJoinRequest(neighborhoodId: ID!, userId: ID!): Boolean!
     updateVisibility(isPublic: Boolean!): User!
     updateBubblePhoto(neighborhoodId: ID!, cid: String!): Neighborhood
@@ -605,7 +606,6 @@ const typeDefs = gql`
     status: String!
     requestedAt: String!
   }
-
 `;
 
 export default typeDefs;

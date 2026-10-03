@@ -982,6 +982,58 @@ const resolvers = {
   },
 
   Mutation: {
+    deleteStream: async (_, { streamId }, context) => {
+      if (!context.user) throw new Error("Authentication required");
+
+      const stream = await Stream.findById(streamId);
+      if (!stream) throw new Error("Stream not found");
+
+      // Permission: the host can always delete. Mods/owners of any target bubble can too.
+      const isHost = stream.startedBy.toString() === context.user.userId;
+
+      let isModerator = false;
+      if (!isHost) {
+        const targets = stream.neighborhoods?.length
+          ? stream.neighborhoods
+          : [stream.neighborhood];
+
+        const bubbles = await Neighborhood.find({ _id: { $in: targets } });
+
+        isModerator = bubbles.some((bubble) =>
+          bubble.members.some(
+            (m) =>
+              m.user.toString() === context.user.userId &&
+              (m.role === "owner" || m.role === "moderator"),
+          ),
+        );
+      }
+
+      if (!isHost && !isModerator) {
+        throw new Error("Not authorized to delete this stream");
+      }
+
+      // 1. Stop the seeder (destroy torrents, clean up /tmp)
+      try {
+        await reactiveBooster.stopStreamBoost(stream.sessionId);
+      } catch (err) {
+        console.warn("[deleteStream] booster cleanup failed:", err.message);
+      }
+
+      // 2. Delete header messages
+      await Message.deleteMany({
+        sessionId: stream.sessionId,
+        content: "STREAM_HEADER",
+      });
+
+      // 3. Delete chunks
+      await StreamChunk.deleteMany({ stream: stream._id });
+
+      // 4. Delete the stream doc itself
+      await Stream.deleteOne({ _id: stream._id });
+
+      return true;
+    },
+
     rejectJoinRequest: async (_, { neighborhoodId, userId }, context) => {
       if (!context.user) throw new Error("Authentication required");
 
