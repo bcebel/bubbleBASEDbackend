@@ -35,6 +35,7 @@ const validateAndExtractAffiliateHtml = (html) => {
     "ftjcfx.com",
     "awltovhc.com",
     "kqzyfj.com",
+    "dpbolvw.com"
   ];
 
   const domainPattern = allowedDomains.join("|");
