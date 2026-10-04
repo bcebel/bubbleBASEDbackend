@@ -27,16 +27,24 @@ import StreamChunk from "../../models/StreamChunk.js";
 
 // In validateAndExtractAffiliateHtml, loosen the validation:
 const validateAndExtractAffiliateHtml = (html) => {
-  const allowedDomains = [
-    "anrdoezrs.net",
-    "tkqlhce.com",
-    "jdoqocy.com",
-    "tqlkg.com",
-    "ftjcfx.com",
-    "awltovhc.com",
-    "kqzyfj.com",
-    "dpbolvw.com"
-  ];
+const allowedDomains = [
+  "anrdoezrs.net",
+  "dpbolvw.net", // ← missing
+  "jdoqocy.com",
+  "kqzyfj.com",
+  "tkqlhce.com",
+  "tqlkg.com",
+  "ftjcfx.com",
+  "awltovhc.com",
+  // Additional CJ domains seen in the wild:
+  "apmebf.com",
+  "emjcd.com",
+  "qksrv.net",
+  "sjv.io",
+  "anrdoezrs.net",
+  "comission-junction.com",
+  "www.lduhtrp.net",
+];
 
   const domainPattern = allowedDomains.join("|");
 
