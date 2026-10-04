@@ -43,7 +43,7 @@ const allowedDomains = [
   "sjv.io",
   "anrdoezrs.net",
   "comission-junction.com",
-  "www.lduhtrp.net",
+  "lduhtrp.net",
 ];
 
   const domainPattern = allowedDomains.join("|");
