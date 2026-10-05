@@ -37,6 +37,7 @@
     "mongoose": "^8.9.3",
     "multer": "^1.4.5-lts.1",
     "multistream": "^4.1.0",
+    "nodemailer": "^10.0.14",
     "pinata-web3": "^0.5.4",
     "socket.io": "^4.8.1",
     "stripe": "^17.5.0",

@@ -377,6 +377,8 @@ const typeDefs = gql`
   }
 
   type Mutation {
+    requestPasswordReset(email: String!): Boolean!
+    resetPassword(token: String!, newPassword: String!): Boolean!
     deleteStream(streamId: ID!): Boolean!
     rejectJoinRequest(neighborhoodId: ID!, userId: ID!): Boolean!
     updateVisibility(isPublic: Boolean!): User!

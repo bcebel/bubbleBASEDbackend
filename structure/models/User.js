@@ -47,6 +47,8 @@ const userSchema = new Schema(
         clicks: { type: Number, default: 0 },
       },
     ],
+    resetPasswordToken: { type: String, default: null },
+    resetPasswordExpires: { type: Date, default: null },
     joinedViaLink: {
       type: [
         {

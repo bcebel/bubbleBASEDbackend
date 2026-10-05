@@ -15,6 +15,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { canRead } from "../../../utils/bubbleAccess.js";
 import crypto from "crypto";
+import { sendPasswordReset } from "../../../mailgun.js";
 import { requireNeighborhoodAccess } from "../../../utils/authHelpers.js";
 import {
   ROLE_RANK,
@@ -991,6 +992,71 @@ const resolvers = {
   },
 
   Mutation: {
+    requestPasswordReset: async (_, { email }) => {
+      const user = await User.findOne({ email: email.toLowerCase().trim() });
+
+      // Always return success, even if the email doesn't exist.
+      // This prevents attackers from enumerating your user list.
+      if (!user) {
+        return true;
+      }
+
+      // Generate a random token (raw) and hash it (stored).
+      // The raw token goes in the email link.
+      // The hash goes in the database.
+      const rawToken = crypto.randomBytes(32).toString("hex");
+      const hashedToken = crypto
+        .createHash("sha256")
+        .update(rawToken)
+        .digest("hex");
+
+      user.resetPasswordToken = hashedToken;
+      user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+      await user.save();
+
+      try {
+        await sendPasswordReset(user.email, rawToken);
+      } catch (err) {
+        // Email failed. Log it. Still return success so the attacker
+        // doesn't learn anything from timing.
+        console.error("[password reset] email failed:", err.message);
+      }
+
+      return true;
+    },
+
+    resetPassword: async (_, { token, newPassword }) => {
+      if (!token || !newPassword) {
+        throw new Error("Token and new password are required");
+      }
+
+      if (newPassword.length < 8) {
+        throw new Error("Password must be at least 8 characters");
+      }
+
+      // Hash the incoming token so we can compare it to what's stored
+      const hashedToken = crypto
+        .createHash("sha256")
+        .update(token)
+        .digest("hex");
+
+      const user = await User.findOne({
+        resetPasswordToken: hashedToken,
+        resetPasswordExpires: { $gt: new Date() },
+      });
+
+      if (!user) {
+        throw new Error("Invalid or expired reset token");
+      }
+
+      // Set the new password. The pre-save hook in User.js hashes it for us.
+      user.password = newPassword;
+      user.resetPasswordToken = null;
+      user.resetPasswordExpires = null;
+      await user.save();
+
+      return true;
+    },
     deleteStream: async (_, { streamId }, context) => {
       if (!context.user) throw new Error("Authentication required");
 
