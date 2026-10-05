@@ -412,28 +412,59 @@ const resolvers = {
     },
     // Stream queries
     streams: async (_, { status, neighborhoodId }, context) => {
-      if (!context.user) return [];
+  if (!neighborhoodId) {
+    // Global tab: member-only, no public-user gate needed
+    // (if you're not in the bubble, you shouldn't be watching its stream
+    //  on the global tab either — this is the "my subscriptions" feed)
+    const memberIds = await Neighborhood.find({
+      "members.user": context.user?.userId,
+    }).distinct("_id");
 
+    const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
+    return await Stream.find({
+      neighborhood: { $in: memberIds },
+      createdAt: { $gte: sixHoursAgo },
+      ...(status && { status }),
+    })
+      .populate("startedBy")
+      .populate("neighborhood")
+      .sort({ createdAt: -1 });
+  }
+      if (!mongoose.Types.ObjectId.isValid(neighborhoodId)) {
+        throw new Error("Invalid neighborhood ID");
+      }
+
+      const neighborhood = await Neighborhood.findById(neighborhoodId);
+      if (!neighborhood) throw new Error("Neighborhood not found");
+
+      // Gate 1: bubble-level access
+      if (!canRead(neighborhood, context.user)) {
+        throw new Error("Not a member of this neighborhood");
+      }
+
+      const isMember =
+        context.user &&
+        neighborhood.members.some(
+          (member) => member.user.toString() === context.user.userId,
+        );
+
+      // Gate 2: guests only see streams from public broadcasters
       const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
-
-      const filter = {
+      const query = {
+        neighborhood: neighborhoodId,
         createdAt: { $gte: sixHoursAgo },
       };
 
-      if (neighborhoodId) {
-        // Bubble-scoped: trust the neighborhood page's gate
-        filter.neighborhood = neighborhoodId;
-      } else {
-        // Global tab: only streams from bubbles the user is a member of
-        const neighborhoodIds = await Neighborhood.find({
-          "members.user": context.user.userId,
-        }).distinct("_id");
-        filter.neighborhood = { $in: neighborhoodIds };
+      if (!isMember) {
+        const publicUserIds = await User.find({ isPublic: true }).distinct(
+          "_id",
+        );
+        query.startedBy = { $in: publicUserIds };
       }
 
-      if (status) filter.status = status;
+      if (status) query.status = status;
 
-      return await Stream.find(filter)
+      return await Stream.find(query)
         .populate("startedBy")
         .populate("neighborhood")
         .sort({ createdAt: -1 });
