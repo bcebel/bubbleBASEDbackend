@@ -412,13 +412,14 @@ const resolvers = {
     },
     // Stream queries
     streams: async (_, { status, neighborhoodId }, context) => {
-  if (!neighborhoodId) {
+      if (!neighborhoodId) {
+     if (!context.user) return []; 
     // Global tab: member-only, no public-user gate needed
     // (if you're not in the bubble, you shouldn't be watching its stream
     //  on the global tab either — this is the "my subscriptions" feed)
-    const memberIds = await Neighborhood.find({
-      "members.user": context.user?.userId,
-    }).distinct("_id");
+ const memberIds = await Neighborhood.find({
+   "members.user": context.user.userId,
+ }).distinct("_id");
 
     const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
     return await Stream.find({
@@ -437,10 +438,7 @@ const resolvers = {
       const neighborhood = await Neighborhood.findById(neighborhoodId);
       if (!neighborhood) throw new Error("Neighborhood not found");
 
-      // Gate 1: bubble-level access
-      if (!canRead(neighborhood, context.user)) {
-        throw new Error("Not a member of this neighborhood");
-      }
+  
 
       const isMember =
         context.user &&
@@ -455,12 +453,17 @@ const resolvers = {
         createdAt: { $gte: sixHoursAgo },
       };
 
-      if (!isMember) {
-        const publicUserIds = await User.find({ isPublic: true }).distinct(
-          "_id",
-        );
-        query.startedBy = { $in: publicUserIds };
-      }
+     if (!isMember) {
+       // Bubble must be outward-facing
+       if (neighborhood.type !== "global") {
+         throw new Error("Not a member of this neighborhood");
+       }
+       // AND broadcaster opted in
+       const publicUserIds = await User.find({ isPublic: true }).distinct(
+         "_id",
+       );
+       query.startedBy = { $in: publicUserIds };
+     }
 
       if (status) query.status = status;
 
