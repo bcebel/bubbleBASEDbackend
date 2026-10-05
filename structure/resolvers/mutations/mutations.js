@@ -411,20 +411,25 @@ const resolvers = {
       };
     },
     // Stream queries
-    streams: async (_, { status }, context) => {
-      if (!context.user) return []; // or show global only if logged out, your call
-
-      // bubbles the user is a member of — includes global IF they joined it
-      const neighborhoodIds = await Neighborhood.find({
-        "members.user": context.user.userId,
-      }).distinct("_id");
+    streams: async (_, { status, neighborhoodId }, context) => {
+      if (!context.user) return [];
 
       const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
 
       const filter = {
-        neighborhood: { $in: neighborhoodIds },
         createdAt: { $gte: sixHoursAgo },
       };
+
+      if (neighborhoodId) {
+        // Bubble-scoped: trust the neighborhood page's gate
+        filter.neighborhood = neighborhoodId;
+      } else {
+        // Global tab: only streams from bubbles the user is a member of
+        const neighborhoodIds = await Neighborhood.find({
+          "members.user": context.user.userId,
+        }).distinct("_id");
+        filter.neighborhood = { $in: neighborhoodIds };
+      }
 
       if (status) filter.status = status;
 

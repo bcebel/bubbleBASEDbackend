@@ -314,7 +314,7 @@ const typeDefs = gql`
     getNeighborhoodGallery(neighborhoodId: ID!): GalleryResponse
 
     # Stream queries
-    streams(status: String): [Stream!]!
+    streams(status: String, neighborhoodId: ID): [Stream!]!
     stream(id: ID!): Stream
 
     # Ad queries
