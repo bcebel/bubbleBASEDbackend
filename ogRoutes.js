@@ -31,23 +31,23 @@ router.get("/api/og/join/:code", async (req, res) => {
 
     const imageUrl = neighborhood.bubblePhotoCid
       ? `https://${process.env.PINATA_GATEWAY}/ipfs/${neighborhood.bubblePhotoCid}`
-      : "https://bubblebased.com/bbl.jpg";
+      : "https://ebubbl.com/bbl.jpg";
 
-    const ogUrl = `https://bubblebased.com/join/${req.params.code}`;
+    const ogUrl = `https://ebubbl.com/join/${req.params.code}`;
 
     res.set("Content-Type", "text/html; charset=utf-8");
     res.send(`<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>${name} — BubbleBased</title>
+  <title>${name} — ebubbl</title>
 
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Join the ${name} bubble" />
   <meta property="og:description" content="${description} · ${memberCount} members" />
   <meta property="og:image" content="${imageUrl}" />
   <meta property="og:url" content="${ogUrl}" />
-  <meta property="og:site_name" content="BubbleBased" />
+  <meta property="og:site_name" content="ebubbl" />
 
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${name}" />

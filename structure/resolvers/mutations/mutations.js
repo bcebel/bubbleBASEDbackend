@@ -987,7 +987,7 @@ const resolvers = {
         const transformedLink = {
           ...link.toObject(),
           id: link._id.toString(),
-          url: `${process.env.APP_URL || "http://bubblebased.com"}/join/${
+          url: `${process.env.APP_URL || "http://ebubbl.com"}/join/${
             link.code
           }`,
         };
@@ -2244,7 +2244,7 @@ const resolvers = {
             : null,
           role: savedLink.role || "member",
           isActive: savedLink.isActive !== false,
-          url: `${process.env.APP_URL || "http://bubblebased.com"}/join/${
+          url: `${process.env.APP_URL || "http://ebubbl.com"}/join/${
             savedLink.code
           }`,
           createdAt: savedLink.createdAt
@@ -2315,7 +2315,7 @@ const resolvers = {
       return {
         ...savedLink.toObject(),
         id: savedLink._id.toString(),
-        url: `${process.env.APP_URL || "https://bubblebased.com"}/join/${
+        url: `${process.env.APP_URL || "https://ebubbl.com"}/join/${
           savedLink.code
         }`,
       };
@@ -2588,7 +2588,7 @@ const resolvers = {
   // Field resolvers// In resolvers.js - Update the InviteLink field resolver
   InviteLink: {
     url: (parent) => {
-      return `${process.env.APP_URL || "https://bubblebased.com"}/join/${
+      return `${process.env.APP_URL || "https://ebubbl.com"}/join/${
         parent.code
       }`;
     },

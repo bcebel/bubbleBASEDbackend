@@ -222,7 +222,7 @@ export default (app) => {
           file.mimetype,
         );
 
-        const webseed = `https://bubblebased.com/api/webseed/${cid}`;
+        const webseed = `https://ebubbl.com/api/webseed/${cid}`;
 
         // Images are small — keep passing the buffer
         const magnetLink = await reactiveBooster.boostChunkIfNeeded(
