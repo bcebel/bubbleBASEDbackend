@@ -1224,7 +1224,6 @@ const resolvers = {
 
       if (existingBubble) return existingBubble;
 
-try{
       const newBubble = new Neighborhood({
         name: "Direct Message",
         type: "direct",
@@ -1236,14 +1235,9 @@ try{
       });
 
       await newBubble.save();
-  return newBubble;
-  
-    } catch (err) {
-  if (err.code === 11000) {
-    throw new Error("That name is already taken");
-  }
-  throw err;
-}
+      return newBubble;
+    },
+    
 
     acceptBubbleInvite: async (
       _,
@@ -1981,6 +1975,7 @@ try{
         );
       }
 
+      
       const neighborhood = new Neighborhood({
         name,
         description: description || "",
