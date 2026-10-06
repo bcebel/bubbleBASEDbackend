@@ -278,18 +278,19 @@ export default (app) => {
               `slice-${i}-${file.originalname}`,
               file.mimetype,
             );
+        const webseed = `https://ebubbl.com/api/webseed/${cid}`;
 
             // Write slice to disk, seed from path
             const slicePath = await writeToDisk(
               chunkBuffer,
               `slice-${cid}.mp4`,
             );
-
+console.log("WEBSEED ARRAY:", [webseed]);
             const magnetLink = await reactiveBooster.boostChunkIfNeeded(
               slicePath,
               `gallery-${cid}`,
               announce,
-              [ipfsUrl],
+              [webseed],
             );
 
             sliceRecords.push({
@@ -338,12 +339,14 @@ export default (app) => {
 
         // Write video to disk, seed from path
         const videoPath = await writeToDisk(fullBuffer, `video-${cid}.mp4`);
+        const webseed = `https://ebubbl.com/api/webseed/${cid}`;
 
+        console.log("WEBSEED ARRAY:", [webseed]);
         const magnetLink = await reactiveBooster.boostChunkIfNeeded(
           videoPath,
           `video-${cid}`,
           announce,
-          [ipfsUrl],
+          [webseed],
         );
 
         const newVideo = new Video({
