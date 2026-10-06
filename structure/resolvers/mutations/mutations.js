@@ -1225,7 +1225,7 @@ const resolvers = {
       if (existingBubble) return existingBubble;
 
       const newBubble = new Neighborhood({
-        name: "Direct Message",
+        name: `DM:${user.userId}-${userId}`,
         type: "direct",
         owner: user.userId,
         members: [
