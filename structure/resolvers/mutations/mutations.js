@@ -1891,7 +1891,7 @@ const resolvers = {
       await user.save();
 
       const personalNeighborhood = new Neighborhood({
-        name: `${user.username}'s Bubble`,
+        name: `Personal:${user._id}`,
         description: "Your personal digital bubbledom",
         type: "personal",
         owner: user._id,
@@ -1906,7 +1906,7 @@ const resolvers = {
       await personalNeighborhood.save();
 
       const defaultBubble = new Neighborhood({
-        name: `${user.username}'s bubble`,
+        name: `Private:${user._id}`,
         description: "",
         type: "private",
         joinPolicy: "invite_only",
