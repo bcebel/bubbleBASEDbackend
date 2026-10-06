@@ -216,6 +216,14 @@ NeighborhoodSchema.methods.createInviteLink = async function (options) {
 };
 
 // Add index for better performance
+NeighborhoodSchema.index(
+  { name: 1 },
+  {
+    unique: true,
+    collation: { locale: "en", strength: 2 },
+    partialFilterExpression: { type: { $ne: "direct" } },
+  },
+);
 NeighborhoodSchema.index({ owner: 1 });
 NeighborhoodSchema.index({ "members.user": 1 });
 NeighborhoodSchema.index({ type: 1 });
