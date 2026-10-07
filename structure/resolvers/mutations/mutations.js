@@ -575,13 +575,12 @@ const resolvers = {
 
       const post = await Post.findById(id)
         .populate("author", "username profilePhoto")
-        .populate("neighborhood", "type members isPublic");
+        .populate("neighborhood", "type members");
 
       if (!post) throw new Error("Post not found");
 
       const neighborhood = post.neighborhood;
 
-      // If the post isn't attached to a bubble, fall back to author-only
       if (!neighborhood) {
         if (context.user?.userId === post.author?.id) return post;
         throw new Error("Not authorized to view this post");
@@ -597,9 +596,12 @@ const resolvers = {
           (m) => m.user.toString() === context.user.userId,
         );
 
-      // Non-members only see posts from public authors
       if (!isMember) {
-        const authorIsPublic = post.author?.isPublic === true;
+        // Same pattern as `posts` — check against public users
+        const authorIsPublic = await User.exists({
+          _id: post.author._id,
+          isPublic: true,
+        });
         if (!authorIsPublic) {
           throw new Error("Not authorized to view this post");
         }
