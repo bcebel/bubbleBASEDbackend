@@ -413,32 +413,30 @@ const resolvers = {
     // Stream queries
     streams: async (_, { status, neighborhoodId }, context) => {
       if (!neighborhoodId) {
-     if (!context.user) return []; 
-    // Global tab: member-only, no public-user gate needed
-    // (if you're not in the bubble, you shouldn't be watching its stream
-    //  on the global tab either — this is the "my subscriptions" feed)
- const memberIds = await Neighborhood.find({
-   "members.user": context.user.userId,
- }).distinct("_id");
+        if (!context.user) return [];
+        // Global tab: member-only, no public-user gate needed
+        // (if you're not in the bubble, you shouldn't be watching its stream
+        //  on the global tab either — this is the "my subscriptions" feed)
+        const memberIds = await Neighborhood.find({
+          "members.user": context.user.userId,
+        }).distinct("_id");
 
-    const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
-    return await Stream.find({
-      neighborhood: { $in: memberIds },
-      createdAt: { $gte: sixHoursAgo },
-      ...(status && { status }),
-    })
-      .populate("startedBy")
-      .populate("neighborhood")
-      .sort({ createdAt: -1 });
-  }
+        const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
+        return await Stream.find({
+          neighborhood: { $in: memberIds },
+          createdAt: { $gte: sixHoursAgo },
+          ...(status && { status }),
+        })
+          .populate("startedBy")
+          .populate("neighborhood")
+          .sort({ createdAt: -1 });
+      }
       if (!mongoose.Types.ObjectId.isValid(neighborhoodId)) {
         throw new Error("Invalid neighborhood ID");
       }
 
       const neighborhood = await Neighborhood.findById(neighborhoodId);
       if (!neighborhood) throw new Error("Neighborhood not found");
-
-  
 
       const isMember =
         context.user &&
@@ -453,17 +451,17 @@ const resolvers = {
         createdAt: { $gte: sixHoursAgo },
       };
 
-     if (!isMember) {
-       // Bubble must be outward-facing
-       if (neighborhood.type !== "global") {
-         throw new Error("Not a member of this neighborhood");
-       }
-       // AND broadcaster opted in
-       const publicUserIds = await User.find({ isPublic: true }).distinct(
-         "_id",
-       );
-       query.startedBy = { $in: publicUserIds };
-     }
+      if (!isMember) {
+        // Bubble must be outward-facing
+        if (neighborhood.type !== "global") {
+          throw new Error("Not a member of this neighborhood");
+        }
+        // AND broadcaster opted in
+        const publicUserIds = await User.find({ isPublic: true }).distinct(
+          "_id",
+        );
+        query.startedBy = { $in: publicUserIds };
+      }
 
       if (status) query.status = status;
 
@@ -570,9 +568,45 @@ const resolvers = {
       return posts;
     },
 
-    post: async (_, { id }) =>
-      await Post.findById(id).populate("author").populate("group"),
+    post: async (_, { id }, context) => {
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new Error("Invalid post ID");
+      }
 
+      const post = await Post.findById(id)
+        .populate("author", "username profilePhoto")
+        .populate("neighborhood", "type members isPublic");
+
+      if (!post) throw new Error("Post not found");
+
+      const neighborhood = post.neighborhood;
+
+      // If the post isn't attached to a bubble, fall back to author-only
+      if (!neighborhood) {
+        if (context.user?.userId === post.author?.id) return post;
+        throw new Error("Not authorized to view this post");
+      }
+
+      if (!canRead(neighborhood, context.user)) {
+        throw new Error("Not a member of this neighborhood");
+      }
+
+      const isMember =
+        context.user &&
+        neighborhood.members?.some(
+          (m) => m.user.toString() === context.user.userId,
+        );
+
+      // Non-members only see posts from public authors
+      if (!isMember) {
+        const authorIsPublic = post.author?.isPublic === true;
+        if (!authorIsPublic) {
+          throw new Error("Not authorized to view this post");
+        }
+      }
+
+      return post;
+    },
     // Group queries
     groups: async () => await Group.find().populate("members"),
     group: async (_, { id }) => await Group.findById(id).populate("members"),
@@ -1237,7 +1271,6 @@ const resolvers = {
       await newBubble.save();
       return newBubble;
     },
-    
 
     acceptBubbleInvite: async (
       _,
@@ -1975,7 +2008,6 @@ const resolvers = {
         );
       }
 
-      
       const neighborhood = new Neighborhood({
         name,
         description: description || "",
