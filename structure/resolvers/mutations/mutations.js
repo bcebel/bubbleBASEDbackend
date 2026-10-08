@@ -633,16 +633,29 @@ const resolvers = {
 
       if (!neighborhood) throw new Error("Neighborhood not found");
 
-      if (neighborhood.type === "personal" || neighborhood.type === "direct") {
-        // Only members can see these
-        const isMember =
-          context.user &&
-          neighborhood.members.some(
-            (m) => m.user._id.toString() === context.user.userId,
-          );
-        if (!isMember) {
-          throw new Error("Not a member of this neighborhood");
-        }
+      if (!canRead(neighborhood, context.user)) {
+        throw new Error("Not a member of this neighborhood");
+      }
+
+      const isMember =
+        context.user &&
+        neighborhood.members.some(
+          (m) => m.user?._id.toString() === context.user.userId,
+        );
+
+      // Non-members only see the roster of public users
+      if (!isMember) {
+        const publicUserIds = await User.find({ isPublic: true }).distinct(
+          "_id",
+        );
+        const publicIdSet = new Set(publicUserIds.map((uid) => uid.toString()));
+
+        neighborhood.members = neighborhood.members.filter(
+          (m) => m.user?._id && publicIdSet.has(m.user._id.toString()),
+        );
+
+        // Join requests are internal — hide from non-members
+        neighborhood.joinRequests = [];
       }
 
       return neighborhood;
