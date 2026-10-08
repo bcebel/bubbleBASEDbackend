@@ -626,24 +626,28 @@ const resolvers = {
         throw new Error("Invalid neighborhood ID");
       }
 
-      const neighborhood = await Neighborhood.findById(id)
-        .populate("owner", "username profilePhoto bio")
-        .populate("members.user", "username profilePhoto bio")
-        .populate("joinRequests.user", "username profilePhoto");
-
+      // 1. Load raw (unpopulated) — for the access check
+      const neighborhood = await Neighborhood.findById(id);
       if (!neighborhood) throw new Error("Neighborhood not found");
 
+      // 2. Check access on the raw doc (members.user is ObjectId here)
       if (!canRead(neighborhood, context.user)) {
         throw new Error("Not a member of this neighborhood");
       }
 
+      // 3. Now populate for the response
+      await neighborhood.populate("owner", "username profilePhoto bio");
+      await neighborhood.populate("members.user", "username profilePhoto bio");
+      await neighborhood.populate("joinRequests.user", "username profilePhoto");
+
+      // 4. Compute membership (members.user is now populated)
       const isMember =
         context.user &&
         neighborhood.members.some(
           (m) => m.user?._id.toString() === context.user.userId,
         );
 
-      // Non-members only see the roster of public users
+      // 5. Non-members only see public members
       if (!isMember) {
         const publicUserIds = await User.find({ isPublic: true }).distinct(
           "_id",
@@ -654,7 +658,6 @@ const resolvers = {
           (m) => m.user?._id && publicIdSet.has(m.user._id.toString()),
         );
 
-        // Join requests are internal — hide from non-members
         neighborhood.joinRequests = [];
       }
 
