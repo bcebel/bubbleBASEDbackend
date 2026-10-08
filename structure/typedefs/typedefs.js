@@ -204,6 +204,7 @@ const typeDefs = gql`
     likes: [User]
     comments: [Comment!]
     isPinned: Boolean
+    sharedFrom: Post
     commentCount: Int!
     createdAt: String
     updatedAt: String
@@ -510,6 +511,8 @@ const typeDefs = gql`
 
     deletePost(postId: ID!): Boolean
     deleteMessage(messageId: ID!): Boolean
+      sharePost(postId: ID!, targetNeighborhoodId: ID!): Post
+
     createNeighborhood(
       name: String!
       description: String

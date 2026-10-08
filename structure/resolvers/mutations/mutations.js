@@ -1067,6 +1067,35 @@ const resolvers = {
   },
 
   Mutation: {
+    sharePost: async (_, { postId, targetNeighborhoodId }, context) => {
+      if (!context.user) throw new Error("Authentication required");
+
+      const original = await Post.findById(postId);
+      if (!original) throw new Error("Post not found");
+
+      // Only the author can share their own post
+      if (original.author.toString() !== context.user.userId) {
+        throw new Error("You can only share your own posts");
+      }
+
+      // Must be a member of the target bubble
+      const target = await Neighborhood.findOne({
+        _id: targetNeighborhoodId,
+        "members.user": context.user.userId,
+      });
+      if (!target) throw new Error("Not a member of that bubble");
+
+      const shared = new Post({
+        content: original.content,
+        author: context.user.userId,
+        neighborhood: targetNeighborhoodId,
+        media: original.media, // same cid/magnet/etc
+        sharedFrom: original._id,
+      });
+      await shared.save();
+      return shared;
+    },
+
     requestPasswordReset: async (_, { email }) => {
       const user = await User.findOne({ email: email.toLowerCase().trim() });
 
@@ -2578,6 +2607,10 @@ const resolvers = {
   },
 
   Post: {
+    sharedFrom: async (parent) => {
+      if (!parent.sharedFrom) return null;
+      return await Post.findById(parent.sharedFrom);
+    },
     commentCount: (parent) => {
       // ✅ Always return a number
       if (parent.comments) {

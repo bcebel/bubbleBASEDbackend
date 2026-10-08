@@ -30,7 +30,11 @@ const postSchema = new mongoose.Schema(
         thumbnailUrl: { type: String },
       },
     ],
-
+    sharedFrom: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Post",
+      default: null,
+    },
     // ✅ Keep affiliate separate (posts-only feature)
     affiliate: {
       targetUrl: { type: String },
