@@ -502,7 +502,7 @@ app.post(
 
       // Atomic write
       const writePath = tempFilePath + ".tmp";
-      await fs.promises.writeFile(writePath, file.buffer);
+      await fs.promises.writeFile(writePath, fileBuffer);
       await fs.promises.rename(writePath, tempFilePath);
 
       console.log(`💾 Writing chunk to: ${tempFilePath}`);
@@ -615,7 +615,127 @@ app.post(
   },
 );
 
-// In your backend, create an endpoint that generates an .m3u8 file
+app.post("/api/live-chunk-native", authenticateToken, async (req, res) => {
+  try {
+    const { sessionId, chunkIndex, rotation, base64 } = req.body;
+
+    if (!base64) {
+      return res.status(400).json({ success: false, error: "No file data" });
+    }
+
+    // Convert base64 to Buffer
+    const fileBuffer = Buffer.from(base64, "base64");
+    const mimeType = 'video/mp4; codecs="mp4a.40.2,avc1.4d4015"';
+    const indexInt = parseInt(chunkIndex);
+
+    const trackers = [
+      "wss://tracker-0ad4cca9fd92.herokuapp.com",
+      "wss://tracker.openwebtorrent.com",
+      "wss://tracker.webtorrent.dev",
+    ];
+
+    const tempDir = path.join("/tmp", "live-chunks", sessionId);
+    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+
+    const ext = mimeType.includes("mp4") ? "mp4" : "webm";
+    const tempFilePath = path.join(tempDir, `chunk-${indexInt}.${ext}`);
+
+    const writePath = tempFilePath + ".tmp";
+    await fs.promises.writeFile(writePath, fileBuffer);
+    await fs.promises.rename(writePath, tempFilePath);
+
+    const magnetUri = await reactiveBooster.boostChunkIfNeeded(
+      tempFilePath,
+      `${sessionId}-${indexInt}`,
+      trackers,
+    );
+
+    // 4. DATABASE SYNC WITH RETRY LOGIC !
+    let parentStream = await Stream.findOne({ sessionId });
+    let retries = 0;
+    const maxRetries = 5;
+
+    // For header chunks, wait longer - they're first
+    const isHeader = indexInt === -1;
+    const maxRetriesForHeader = 10; // Header needs more patience
+
+    while (
+      !parentStream &&
+      retries < (isHeader ? maxRetriesForHeader : maxRetries)
+    ) {
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      parentStream = await Stream.findOne({ sessionId });
+      retries++;
+    }
+
+    if (!parentStream) {
+      console.warn(
+        `⚠️ Stream ${sessionId} still not found after ${retries} retries`,
+      );
+      if (!isHeader) {
+        console.log("Proceeding with chunk creation anyway...");
+      }
+    }
+
+    // 5. CREATE CHUNK DOCUMENT
+    let newChunk;
+    try {
+      newChunk = await StreamChunk.create({
+        stream: parentStream ? parentStream._id : undefined,
+        sessionId: sessionId,
+        chunkIndex: indexInt,
+        magnetLink: magnetUri,
+        fileName: `chunk-${indexInt}.${ext}`, // 👈 FIXED HERE
+        fileSize: fileBuffer.length || 0,
+        fileType: isHeader ? "video_header" : "video_chunk",
+        mimeType: mimeType,
+      });
+
+      console.log(`💾 [DB] Saved chunk ${indexInt} for session ${sessionId}`);
+      console.log(`💾 [DB] Chunk ID: ${newChunk._id}`);
+
+      const verify = await StreamChunk.findOne({
+        sessionId: sessionId,
+        chunkIndex: indexInt,
+      });
+      console.log(`💾 [DB] Verify found: ${!!verify}`);
+    } catch (dbError) {
+      console.error(
+        `❌ [DB] Failed to save chunk ${indexInt}:`,
+        dbError.message,
+      );
+      return res.status(500).json({
+        success: false,
+        error: "Failed to save chunk to database",
+        details: dbError.message,
+      });
+    }
+
+    // 6. GRAPHQL PUBLISH
+    const publishData = {
+      livestreamChunkAdded: {
+        id: newChunk.id,
+        sessionId: sessionId,
+        chunkIndex: newChunk.chunkIndex,
+        magnetLink: magnetUri,
+        fileName: newChunk.fileName,
+        fileSize: newChunk.fileSize,
+        fileType: newChunk.fileType,
+        mimeType: mimeType,
+        rotation: rotation || 0,
+      },
+    };
+
+    pubsub.publish(`LIVESTREAM_CHUNK_ADDED_${sessionId}`, publishData);
+
+    return res.json({ success: true, magnetUri });
+  } catch (error) {
+    console.error("🔴 [LIVE-CHUNK-NATIVE] SERVER ERROR:", error.message);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+
 app.get("/api/stream/:sessionId/playlist.m3u8", async (req, res) => {
   const { sessionId } = req.params;
 
