@@ -502,7 +502,7 @@ app.post(
 
       // Atomic write
       const writePath = tempFilePath + ".tmp";
-      await fs.promises.writeFile(writePath, fileBuffer);
+      await fs.promises.writeFile(writePath, file.buffer);
       await fs.promises.rename(writePath, tempFilePath);
 
       console.log(`💾 Writing chunk to: ${tempFilePath}`);
