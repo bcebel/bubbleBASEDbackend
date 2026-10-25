@@ -49,28 +49,60 @@ class ReactiveSeedBooster {
     console.log("WebRTC support:", WebTorrent.WEBRTC_SUPPORT);
 
     this.trackers = [
- "wss://tracker-0ad4cca9fd92.herokuapp.com",
-        "wss://tracker.files.fm:7073/announce",
-        "wss://tracker.webtorrent.dev",
-        "wss://tracker.openwebtorrent.com",
-        "wss://tracker.files.fm:7073",
-        "udp://tracker.opentrackr.org:1337/announce",
-        "udp://open.tracker.cl:1337/announce",
-        "udp://9.rarbg.to:2710/announce",
-        "udp://tracker.coppersurfer.tk:6969/announce",
-        "udp://tracker.leechers-paradise.org:6969/announce",
-        "udp://tracker.internetwarriors.net:1337/announce",
-        "udp://exodus.desync.com:6969/announce",
-        "udp://tracker.moeking.me:6969/announce",
-        "udp://opentor.org:2710/announce",
-        "udp://tracker.cyberia.is:6969/announce",
-        "udp://tracker3.itzmx.com:6961/announce"
-      ]; // Added UDP tracker
+      "wss://tracker-0ad4cca9fd92.herokuapp.com",
+      "wss://tracker.files.fm:7073/announce",
+      "wss://tracker.webtorrent.dev",
+      "wss://tracker.openwebtorrent.com",
+      "wss://tracker.files.fm:7073",
+      "udp://tracker.opentrackr.org:1337/announce",
+      "udp://open.tracker.cl:1337/announce",
+      "udp://9.rarbg.to:2710/announce",
+      "udp://tracker.coppersurfer.tk:6969/announce",
+      "udp://tracker.leechers-paradise.org:6969/announce",
+      "udp://tracker.internetwarriors.net:1337/announce",
+      "udp://exodus.desync.com:6969/announce",
+      "udp://tracker.moeking.me:6969/announce",
+      "udp://opentor.org:2710/announce",
+      "udp://tracker.cyberia.is:6969/announce",
+      "udp://tracker3.itzmx.com:6961/announce"
+    ]; // Added UDP tracker
     
 
-    this.activeTorrents = new Map();
+     this.activeTorrents = new Map();
+    this.activeViewers = new Map(); // 👈 Must be inside the constructor
+
     console.log("🎯 Reactive Seed Booster started (P2P Livestream Optimized)");
+
+    // 🧹 Janitor runs every 30 seconds
+    setInterval(() => {
+      const now = Date.now();
+      // 🚨 Check if activeViewers exists just in case
+      if (!this.activeViewers) return; 
+
+      for (const [sessionId, lastSeen] of this.activeViewers.entries()) {
+        if (now - lastSeen > 60000) {
+          console.log(`🧹 No viewers for ${sessionId} in 60s. Cleaning up.`);
+          this.stopStreamBoost(sessionId);
+          this.activeViewers.delete(sessionId);
+        }
+      }
+    }, 30000);
+  } // 👈 This closing bracket ends the constructor!
+
+  // 👇 The methods go OUTSIDE the constructor, but INSIDE the class
+  pingViewer(sessionId) {
+    this.activeViewers.set(sessionId, Date.now());
   }
+
+  removeViewer(sessionId) {
+    this.stopStreamBoost(sessionId);
+    this.activeViewers.delete(sessionId);
+  }
+
+
+
+  
+  
 
   /**
    * Start seeding a chunk for livestream

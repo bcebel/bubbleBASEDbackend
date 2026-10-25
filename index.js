@@ -516,6 +516,8 @@ app.post(
         trackers,
       );
 
+      reactiveBooster.pingViewer(sessionId);
+
       // 4. DATABASE SYNC WITH RETRY LOGIC !
       let parentStream = await Stream.findOne({ sessionId });
       let retries = 0;
@@ -657,6 +659,8 @@ app.post("/api/live-chunk-native", authenticateToken, async (req, res) => {
       `${sessionId}-${indexInt}`,
       trackers,
     );
+
+    reactiveBooster.pingViewer(sessionId);
 
     // 4. DATABASE SYNC WITH RETRY LOGIC !
     let parentStream = await Stream.findOne({ sessionId });
@@ -802,6 +806,7 @@ app.get("/api/live-chunk/:sessionId/:index", async (req, res) => {
 
   const tempDir = path.join("/tmp", "live-chunks", sessionId);
 
+   reactiveBooster.pingViewer(sessionId);
   // Set default CORS header for ALL responses (including 404s)
   res.set("Access-Control-Allow-Origin", "*");
 
@@ -886,9 +891,10 @@ app.get("/api/stream-rotation/:sessionId", async (req, res) => {
   }
 });
 
+
 app.post("/api/stream-end", authenticateToken, async (req, res) => {
   const { sessionId } = req.body;
-
+reactiveBooster.pingViewer(sessionId);
   await Stream.findOneAndUpdate(
     { sessionId },
     {
@@ -907,6 +913,12 @@ app.post("/api/stream-end", authenticateToken, async (req, res) => {
   res.json({ success: true, message: `Stopped boosting stream ${sessionId}` });
 });
 
+
+app.post("/api/stream-leave", authenticateToken, async (req, res) => {
+  const { sessionId } = req.body;
+  reactiveBooster.removeViewer(sessionId);
+  res.json({ success: true });
+});
 // In your backend - /api/seed-persist
 // In your backend - add multer configuration for seed-persist
 const seedUpload = multer({
