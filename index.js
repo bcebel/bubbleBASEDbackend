@@ -619,7 +619,7 @@ app.post(
 
 app.post("/api/live-chunk-native", authenticateToken, async (req, res) => {
   try {
-    const { sessionId, chunkIndex, rotation, base64 } = req.body;
+    const { sessionId, chunkIndex, rotation, base64, mimeType } = req.body;
 
     if (!base64) {
       return res.status(400).json({ success: false, error: "No file data" });
@@ -635,7 +635,11 @@ app.post("/api/live-chunk-native", authenticateToken, async (req, res) => {
     console.log(
       `[NATIVE] Received cleanBase64 length: ${cleanBase64.length}, Buffer length: ${fileBuffer.length}`,
     );
-    const mimeType = 'video/mp4; codecs="mp4a.40.2,avc1.4d4015"';
+ 
+        const actualMimeType =
+          mimeType || 'video/mp4; codecs="mp4a.40.2,avc1.4d4015"';
+    const ext = actualMimeType.includes("webm") ? "webm" : "mp4";
+    
     const indexInt = parseInt(chunkIndex);
 
     const trackers = [
@@ -647,7 +651,6 @@ app.post("/api/live-chunk-native", authenticateToken, async (req, res) => {
     const tempDir = path.join("/tmp", "live-chunks", sessionId);
     if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
 
-    const ext = mimeType.includes("mp4") ? "mp4" : "webm";
     const tempFilePath = path.join(tempDir, `chunk-${indexInt}.${ext}`);
 
     const writePath = tempFilePath + ".tmp";
@@ -702,7 +705,7 @@ app.post("/api/live-chunk-native", authenticateToken, async (req, res) => {
         fileName: `AN-chunk-${indexInt}.${ext}`,
         fileSize: fileBuffer.length,
         fileType: isHeader ? "video_header" : "video_chunk",
-        mimeType: mimeType,
+        mimeType: actualMimeType,
       });
 
       console.log(`💾 [DB] Saved chunk ${indexInt} for session ${sessionId}`);
@@ -735,7 +738,7 @@ app.post("/api/live-chunk-native", authenticateToken, async (req, res) => {
         fileName: newChunk.fileName,
         fileSize: newChunk.fileSize,
         fileType: newChunk.fileType,
-        mimeType: mimeType,
+        mimeType: actualMimeType,
         rotation: rotation || 0,
       },
     };
@@ -851,6 +854,8 @@ app.get("/api/live-chunk/:sessionId/:index", async (req, res) => {
 
   // 🎯 PRIORITY 3: Match Chunk File by Extension or Prefix
   const candidateNames = [
+    `AN-chunk-${index}.webm`,
+    `AN-chunk-${index}.mp4`,
     `chunk-${index}.mp4`,
     `c_${index}.mp4`,
     `${index}.mp4`,
