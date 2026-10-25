@@ -627,7 +627,12 @@ app.post("/api/live-chunk-native", authenticateToken, async (req, res) => {
 
       const cleanBase64 = base64.replace(/[\r\n]+/g, "");
     const fileBuffer = Buffer.from(cleanBase64, "base64");
-    
+    console.log(
+      `[NATIVE] Received base64 length: ${base64.length}, Buffer length: ${fileBuffer.length}`,
+    );
+    console.log(
+      `[NATIVE] Received cleanBase64 length: ${cleanBase64.length}, Buffer length: ${fileBuffer.length}`,
+    );
     const mimeType = 'video/mp4; codecs="mp4a.40.2,avc1.4d4015"';
     const indexInt = parseInt(chunkIndex);
 
