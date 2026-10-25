@@ -699,7 +699,7 @@ app.post("/api/live-chunk-native", authenticateToken, async (req, res) => {
         sessionId: sessionId,
         chunkIndex: indexInt,
         magnetLink: magnetUri,
-        fileName: `chunk-${indexInt}.${ext}`, // 👈 FIXED HERE
+        fileName: `AN-chunk-${indexInt}.${ext}`,
         fileSize: fileBuffer.length,
         fileType: isHeader ? "video_header" : "video_chunk",
         mimeType: mimeType,
