@@ -80,7 +80,7 @@ class ReactiveSeedBooster {
       if (!this.activeViewers) return; 
 
       for (const [sessionId, lastSeen] of this.activeViewers.entries()) {
-        if (now - lastSeen > 60000) {
+        if (now - lastSeen > 10800000) {
           console.log(`🧹 No viewers for ${sessionId} in 60s. Cleaning up.`);
           this.stopStreamBoost(sessionId);
           this.activeViewers.delete(sessionId);
