@@ -1641,42 +1641,7 @@ const resolvers = {
         }
       }
 
-      // 3. Sync video chunk to StreamChunk model if streaming
-      if (
-        sessionId &&
-        (fileType === "video_chunk" || fileType === "video_header")
-      ) {
-        try {
-          const parentStream = await Stream.findOne({ sessionId });
-          if (parentStream) {
-            await StreamChunk.findOneAndUpdate(
-              {
-                stream: parentStream._id,
-                chunkIndex: typeof chunkIndex === "number" ? chunkIndex : -1,
-              },
-              {
-                sessionId,
-                magnetLink,
-                fileName: fileName || "blob",
-                mimeType: mimeType,
-                fileSize: fileSize || 0,
-              },
-              {
-                upsert: true,
-                new: true,
-                setDefaultsOnInsert: true,
-              },
-            );
-
-            if (chunkIndex === -1 && input.thumbnailUrl) {
-              parentStream.status = "live";
-              await parentStream.save();
-            }
-          }
-        } catch (err) {
-          console.error("Error syncing message to StreamChunk:", err);
-        }
-      }
+  
 
       // 4. Populate sender user info
       const populatedMessage = await Message.findById(message._id)
