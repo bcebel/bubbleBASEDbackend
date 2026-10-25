@@ -914,6 +914,32 @@ reactiveBooster.pingViewer(sessionId);
 });
 
 
+app.get("/api/debug-files/:sessionId", async (req, res) => {
+  const { sessionId } = req.params;
+  const tempDir = path.join("/tmp", "live-chunks", sessionId);
+  
+  if (!fs.existsSync(tempDir)) {
+    return res.status(404).json({ error: "Session folder does not exist on Heroku", path: tempDir });
+  }
+
+  try {
+    const files = fs.readdirSync(tempDir).map(file => {
+      const filePath = path.join(tempDir, file);
+      const stats = fs.statSync(filePath);
+      return {
+        fileName: file,
+        fullPath: filePath,
+        sizeInBytes: stats.size,
+        sizeInMB: (stats.size / 1024 / 1024).toFixed(2) + " MB",
+        createdAt: stats.birthtime
+      };
+    });
+    res.json({ sessionId, tempDir, files });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post("/api/stream-leave", authenticateToken, async (req, res) => {
   const { sessionId } = req.body;
   reactiveBooster.removeViewer(sessionId);
