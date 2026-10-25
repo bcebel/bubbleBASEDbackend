@@ -687,14 +687,16 @@ app.post("/api/live-chunk-native", authenticateToken, async (req, res) => {
 
     // 5. CREATE CHUNK DOCUMENT
     let newChunk;
+    
     try {
+      console.log("Saving fileSize:", fileBuffer.length);
       newChunk = await StreamChunk.create({
         stream: parentStream ? parentStream._id : undefined,
         sessionId: sessionId,
         chunkIndex: indexInt,
         magnetLink: magnetUri,
         fileName: `chunk-${indexInt}.${ext}`, // 👈 FIXED HERE
-        fileSize: fileBuffer.length || 0,
+        fileSize: fileBuffer.length,
         fileType: isHeader ? "video_header" : "video_chunk",
         mimeType: mimeType,
       });
