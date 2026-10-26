@@ -638,6 +638,11 @@ app.post("/api/live-chunk-native", authenticateToken, async (req, res) => {
  
         const actualMimeType =
           mimeType || 'video/mp4; codecs="mp4a.40.2,avc1.4d4015"';
+    
+       if (actualMimeType === "video/mp4") {
+      actualMimeType = 'video/mp4; codecs="mp4a.40.2,avc1.4d4015"';
+       }
+    
     const ext = actualMimeType.includes("webm") ? "webm" : "mp4";
     
     const indexInt = parseInt(chunkIndex);
